@@ -99,7 +99,9 @@ def test_write_includes_enriched_columns(simple_csv: Path, tmp_path: Path) -> No
     assert "message" in rows[0]
 
 
-def test_write_auto_names_file(simple_csv: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_write_auto_names_file(
+    simple_csv: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.chdir(tmp_path)
     runner = Runner(input_path=simple_csv, required_headers=["name"])
     runner.run()
@@ -110,7 +112,7 @@ def test_write_auto_names_file(simple_csv: Path, tmp_path: Path, monkeypatch: py
 
 def test_write_before_run_raises(simple_csv: Path) -> None:
     runner = Runner(input_path=simple_csv, required_headers=["name"])
-    with pytest.raises(RuntimeError, match="call run()"):
+    with pytest.raises(RuntimeError, match=r"call run\(\)"):
         runner.write()
 
 
@@ -177,5 +179,18 @@ def test_write_column_order_unlisted_follow(simple_csv: Path, tmp_path: Path) ->
     runner = Runner(input_path=simple_csv, required_headers=["name"])
     runner.run()
     runner.write(out, column_order=["row_number"])
-    keys = list(csv.DictReader(out.open()))[0].keys()
-    assert list(keys)[0] == "row_number"
+    keys = next(iter(csv.DictReader(out.open()))).keys()
+    assert next(iter(keys)) == "row_number"
+
+
+def test_sort_numeric_aware(tmp_path: Path) -> None:
+    csv_path = tmp_path / "mixed.csv"
+    csv_path.write_text("id,val\n1,10\n2,5\n3,abc\n")
+    out = tmp_path / "out.csv"
+    runner = Runner(input_path=csv_path, required_headers=["val"])
+    runner.run()
+    runner.write(out, sort_by="val")
+    rows = list(csv.DictReader(out.open()))
+    vals = [r["val"] for r in rows]
+    # numeric sort: 5 < 10, then strings after all numerics
+    assert vals == ["5", "10", "abc"]

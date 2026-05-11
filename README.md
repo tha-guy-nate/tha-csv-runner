@@ -1,11 +1,13 @@
 # tha-csv-runner
 
+[![CI](https://github.com/tha-guy-nate/tha-csv-runner/actions/workflows/ci.yml/badge.svg)](https://github.com/tha-guy-nate/tha-csv-runner/actions/workflows/ci.yml)
+
 A small Python library that runs a function against every row of a CSV — with a progress bar, required header validation, and structured error capture per row.
 
 ## Install
 
 ```bash
-pip install tha-csv-runner
+pip install git+https://github.com/tha-guy-nate/tha-csv-runner.git
 ```
 
 ## Quick start
@@ -14,6 +16,7 @@ pip install tha-csv-runner
 from tha_csv_runner import Runner
 
 def process(row: dict) -> None:
+    """Raise any exception to mark the row as an error. Return value is ignored."""
     if not row["email"].endswith("@example.com"):
         raise ValueError("invalid email domain")
 

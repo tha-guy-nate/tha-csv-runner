@@ -13,12 +13,12 @@ def _load_processor(spec: str) -> Callable[[dict], None]:
     try:
         module_name, func_name = spec.rsplit(":", 1)
     except ValueError:
-        raise click.BadParameter(f"Expected format 'module:function', got: {spec!r}")
+        raise click.BadParameter(f"Expected format 'module:function', got: {spec!r}") from None
 
     try:
         module = importlib.import_module(module_name)
     except ModuleNotFoundError:
-        raise click.BadParameter(f"Cannot import module {module_name!r}")
+        raise click.BadParameter(f"Cannot import module {module_name!r}") from None
 
     if not hasattr(module, func_name):
         raise click.BadParameter(f"Module {module_name!r} has no attribute {func_name!r}")
@@ -33,10 +33,15 @@ def main() -> None:
 
 @main.command()
 @click.option("--input", "input_path", required=True, help="Path to the input CSV file")
-@click.option("--header", "required_headers", multiple=True, help="Required CSV header (repeatable)")
-@click.option("--processor", "processor_spec", default=None, help="Processor in 'module:function' format (optional)")
+@click.option("--header", "required_headers", multiple=True, help="Required CSV header (repeatable)")  # noqa: E501
+@click.option(
+    "--processor", "processor_spec", default=None,
+    help="Processor in 'module:function' format (optional)",
+)
 @click.option("--sample", default=None, type=int, help="Process only the first N rows")
-@click.option("--output", "output_path", default=None, help="Output CSV path (auto-named if omitted)")
+@click.option(
+    "--output", "output_path", default=None, help="Output CSV path (auto-named if omitted)",
+)
 def run(
     input_path: str,
     processor_spec: str | None,

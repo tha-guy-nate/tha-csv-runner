@@ -36,5 +36,11 @@ packages = ["src/tha_csv_runner"]
 line-length = 100
 target-version = "py310"
 
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "RUF"]
+
+[tool.mypy]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]

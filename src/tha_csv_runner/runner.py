@@ -28,7 +28,8 @@ class Runner:
         self.processor = processor
         self.required_headers = required_headers
         self.sample = sample
-        self.rows: list[dict] | None = None
+        self.rows: list[dict] = []
+        self._ran: bool = False
 
     def _load(self) -> list[dict]:
         with open(self.input_path, newline="", encoding="utf-8") as f:
@@ -48,6 +49,7 @@ class Runner:
     def run(self) -> None:
         raw_rows = self._load()
         self.rows = []
+        self._ran = True
 
         for i, row in enumerate(tqdm(raw_rows, desc=f"Reading {self.input_path.name}"), start=1):
             enriched = {**row, "row_number": i, "row_status": "", "message": ""}
@@ -68,7 +70,7 @@ class Runner:
         keep: list[str] | None = None,
         drop: list[str] | None = None,
     ) -> Path:
-        if self.rows is None:
+        if not self._ran:
             raise RuntimeError("No data to write — call run() first")
         if keep and drop:
             raise ValueError("Cannot specify both keep and drop")
@@ -94,10 +96,12 @@ class Runner:
         # --- sorting ---
         if sort_by is not None:
             sort_cols = [sort_by] if isinstance(sort_by, str) else list(sort_by)
-            asc_list = [ascending] * len(sort_cols) if isinstance(ascending, bool) else list(ascending)
+            asc_list = (
+                [ascending] * len(sort_cols) if isinstance(ascending, bool) else list(ascending)
+            )
 
             def compare(a: dict, b: dict) -> int:
-                for col, asc in zip(sort_cols, asc_list):
+                for col, asc in zip(sort_cols, asc_list, strict=True):
                     ka, kb = _sort_key(a.get(col, "")), _sort_key(b.get(col, ""))
                     if ka < kb:
                         return -1 if asc else 1
@@ -114,8 +118,6 @@ class Runner:
 
         out = Path(output_path)
         out.parent.mkdir(parents=True, exist_ok=True)
-
-        print(f"Writing {out.name}...")
 
         with open(out, "w", newline="", encoding="utf-8") as f:
             if rows:
