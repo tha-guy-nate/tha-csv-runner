@@ -16,7 +16,7 @@ def _sort_key(val: object) -> tuple:
         return (1, str(val))
 
 
-class tha_CSV_Runner:
+class ThaCSV:
     def __init__(self) -> None:
         self.rows: list[dict] = []
         self._read: bool = False
