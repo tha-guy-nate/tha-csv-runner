@@ -20,13 +20,8 @@ def process(row: dict) -> None:
     if not row["email"].endswith("@example.com"):
         raise ValueError("invalid email domain")
 
-runner = Runner(
-    "Step 1 of 1",
-    "data.csv",
-    ["name", "email"],
-    process,
-)
-runner.read()
+runner = Runner()
+runner.read("Step 1 of 1", "data.csv", ["name", "email"], process)
 runner.write("Step 1 of 1", "output.csv")
 ```
 
@@ -45,7 +40,13 @@ runner.write("Step 1 of 1", "output.csv")
 ### `Runner`
 
 ```python
-Runner(
+Runner()
+```
+
+### `runner.read()`
+
+```python
+runner.read(
     "Step 2 of 10",          # progress bar label — pass None to use the filename
     "data.csv",              # path to input CSV
     ["a", "b"],              # columns that must exist — raises ConfigError if missing
@@ -55,11 +56,9 @@ Runner(
 )
 ```
 
-When `enrich=False`, processor exceptions are re-raised instead of captured.
-
-### `runner.read()`
-
 Reads and processes all rows. Results are stored in `runner.rows` as a list of dicts.
+
+When `enrich=False`, processor exceptions are re-raised instead of captured.
 
 ### `runner.write()`
 

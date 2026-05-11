@@ -17,7 +17,12 @@ def _sort_key(val: object) -> tuple:
 
 
 class Runner:
-    def __init__(
+    def __init__(self) -> None:
+        self.rows: list[dict] = []
+        self._read: bool = False
+        self._input_path: Path | None = None
+
+    def read(
         self,
         desc: str | None,
         input_path: str | Path,
@@ -26,46 +31,34 @@ class Runner:
         sample: int | None = None,
         enrich: bool = True,
     ) -> None:
-        self.desc = desc
-        self.input_path = Path(input_path)
-        self.processor = processor
-        self.required_headers = required_headers
-        self.sample = sample
-        self.enrich = enrich
-        self.rows: list[dict] = []
-        self._read: bool = False
+        self._input_path = Path(input_path)
 
-    def _load(self) -> list[dict]:
-        with open(self.input_path, newline="", encoding="utf-8") as f:
+        with open(self._input_path, newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             if reader.fieldnames is None:
-                raise ConfigError(f"{self.input_path} appears to be empty")
-            missing = [h for h in self.required_headers if h not in reader.fieldnames]
+                raise ConfigError(f"{self._input_path} appears to be empty")
+            missing = [h for h in required_headers if h not in reader.fieldnames]
             if missing:
                 raise ConfigError(f"Missing required headers: {missing}")
-            rows = list(reader)
+            raw_rows = list(reader)
 
-        if self.sample is not None:
-            rows = rows[: self.sample]
+        if sample is not None:
+            raw_rows = raw_rows[:sample]
 
-        return rows
-
-    def read(self) -> None:
-        raw_rows = self._load()
         self.rows = []
         self._read = True
 
-        label = self.desc if self.desc is not None else self.input_path.name
+        label = desc if desc is not None else self._input_path.name
         for i, row in enumerate(tqdm(raw_rows, desc=label), start=1):
-            if self.enrich:
+            if enrich:
                 enriched = {**row, "row number": i, "row status": "", "message": ""}
             else:
                 enriched = dict(row)
             try:
-                if self.processor is not None:
-                    self.processor(enriched)
+                if processor is not None:
+                    processor(enriched)
             except Exception as exc:
-                if self.enrich:
+                if enrich:
                     enriched["row status"] = "error"
                     enriched["message"] = str(exc)
                 else:
@@ -125,8 +118,9 @@ class Runner:
 
         # --- output path ---
         if output_path is None:
+            stem = self._input_path.stem if self._input_path else "output"
             ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-            output_path = Path(f"{self.input_path.stem}_processed_{ts}.csv")
+            output_path = Path(f"{stem}_processed_{ts}.csv")
 
         out = Path(output_path)
         out.parent.mkdir(parents=True, exist_ok=True)
