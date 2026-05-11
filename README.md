@@ -13,14 +13,15 @@ pip install tha-csv-runner
 ## Quick start
 
 ```python
-from tha_csv_runner import Runner
+from tha_csv_runner import tha_CSV_Runner
 
 def process(row: dict) -> None:
     """Raise any exception to mark the row as an error. Return value is ignored."""
     if not row["email"].endswith("@example.com"):
         raise ValueError("invalid email domain")
 
-runner = Runner()
+runner = tha_CSV_Runner()
+
 runner.read("Step 1 of 1", "data.csv", ["name", "email"], process)
 runner.write("Step 1 of 1", "output.csv")
 ```
@@ -37,10 +38,10 @@ runner.write("Step 1 of 1", "output.csv")
 
 ## API
 
-### `Runner`
+### `tha_CSV_Runner`
 
 ```python
-Runner()
+tha_CSV_Runner()
 ```
 
 ### `runner.read()`
