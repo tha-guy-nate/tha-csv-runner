@@ -7,7 +7,7 @@ A small Python library that runs a function against every row of a CSV — with 
 ## Install
 
 ```bash
-pip install git+https://github.com/tha-guy-nate/tha-csv-runner.git
+pip install tha-csv-runner
 ```
 
 ## Quick start
