@@ -33,7 +33,7 @@ class Runner:
         self.sample = sample
         self.enrich = enrich
         self.rows: list[dict] = []
-        self._ran: bool = False
+        self._read: bool = False
 
     def _load(self) -> list[dict]:
         with open(self.input_path, newline="", encoding="utf-8") as f:
@@ -50,10 +50,10 @@ class Runner:
 
         return rows
 
-    def run(self) -> None:
+    def read(self) -> None:
         raw_rows = self._load()
         self.rows = []
-        self._ran = True
+        self._read = True
 
         label = self.desc if self.desc is not None else self.input_path.name
         for i, row in enumerate(tqdm(raw_rows, desc=label), start=1):
@@ -82,8 +82,8 @@ class Runner:
         keep: list[str] | None = None,
         drop: list[str] | None = None,
     ) -> Path:
-        if not self._ran:
-            raise RuntimeError("No data to write — call run() first")
+        if not self._read:
+            raise RuntimeError("No data to write — call read() first")
         if keep and drop:
             raise ValueError("Cannot specify both keep and drop")
 

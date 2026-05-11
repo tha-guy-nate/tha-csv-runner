@@ -26,7 +26,7 @@ runner = Runner(
     ["name", "email"],
     process,
 )
-runner.run()
+runner.read()
 runner.write("Step 1 of 1", "output.csv")
 ```
 
@@ -57,7 +57,7 @@ Runner(
 
 When `enrich=False`, processor exceptions are re-raised instead of captured.
 
-### `runner.run()`
+### `runner.read()`
 
 Reads and processes all rows. Results are stored in `runner.rows` as a list of dicts.
 
