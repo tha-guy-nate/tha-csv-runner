@@ -71,19 +71,6 @@ runner.write(
 
 Returns the `Path` that was written.
 
-## CLI
-
-```bash
-tha-csv-runner run \
-    --input data.csv \
-    --processor my_module:process_row \
-    --header name \
-    --header email \
-    --sample 100
-```
-
-`--processor` uses the `module:function` convention. `--header` is repeatable. All flags are optional except `--input`.
-
 ## License
 
 MIT
