@@ -74,6 +74,7 @@ class Runner:
 
     def write(
         self,
+        desc: str | None,
         output_path: str | Path | None = None,
         sort_by: str | list[str] | None = None,
         ascending: bool | list[bool] = True,
@@ -130,10 +131,14 @@ class Runner:
         out = Path(output_path)
         out.parent.mkdir(parents=True, exist_ok=True)
 
+        write_label = desc if desc is not None else out.name
         with open(out, "w", newline="", encoding="utf-8") as f:
             if rows:
                 writer = csv.DictWriter(f, fieldnames=cols)
                 writer.writeheader()
-                writer.writerows({c: row[c] for c in cols if c in row} for row in rows)
+                writer.writerows(
+                    {c: row[c] for c in cols if c in row}
+                    for row in tqdm(rows, desc=write_label)
+                )
 
         return out

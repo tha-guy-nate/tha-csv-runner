@@ -27,7 +27,7 @@ runner = Runner(
     process,
 )
 runner.run()
-runner.write("output.csv")
+runner.write("Step 1 of 1", "output.csv")
 ```
 
 ## How it works
@@ -65,6 +65,7 @@ Reads and processes all rows. Results are stored in `runner.rows` as a list of d
 
 ```python
 runner.write(
+    "Step 10 of 10",                   # progress bar label — pass None to use the output filename
     output_path="output.csv",          # optional — auto-named input_processed_TIMESTAMP.csv if omitted
     sort_by="name",                    # optional — column name, or list of column names
     ascending=True,                    # optional — bool or list of bools matching sort_by

@@ -75,7 +75,7 @@ def test_write_creates_file(simple_csv: Path, tmp_path: Path) -> None:
     out = tmp_path / "out.csv"
     runner = Runner(None, simple_csv, ["name"])
     runner.run()
-    runner.write(out)
+    runner.write(None, out)
     assert out.exists()
 
 
@@ -83,7 +83,7 @@ def test_write_contains_all_rows(simple_csv: Path, tmp_path: Path) -> None:
     out = tmp_path / "out.csv"
     runner = Runner(None, simple_csv, ["name"])
     runner.run()
-    runner.write(out)
+    runner.write(None, out)
     rows = list(csv.DictReader(out.open()))
     assert len(rows) == 3
 
@@ -92,7 +92,7 @@ def test_write_includes_enriched_columns(simple_csv: Path, tmp_path: Path) -> No
     out = tmp_path / "out.csv"
     runner = Runner(None, simple_csv, ["name"])
     runner.run()
-    runner.write(out)
+    runner.write(None, out)
     rows = list(csv.DictReader(out.open()))
     assert "row number" in rows[0]
     assert "row status" in rows[0]
@@ -105,7 +105,7 @@ def test_write_auto_names_file(
     monkeypatch.chdir(tmp_path)
     runner = Runner(None, simple_csv, ["name"])
     runner.run()
-    out = runner.write()
+    out = runner.write(None)
     assert out.name.startswith("simple_processed_")
     assert out.exists()
 
@@ -113,14 +113,14 @@ def test_write_auto_names_file(
 def test_write_before_run_raises(simple_csv: Path) -> None:
     runner = Runner(None, simple_csv, ["name"])
     with pytest.raises(RuntimeError, match=r"call run\(\)"):
-        runner.write()
+        runner.write(None)
 
 
 def test_write_sort_by_single(simple_csv: Path, tmp_path: Path) -> None:
     out = tmp_path / "out.csv"
     runner = Runner(None, simple_csv, ["name"])
     runner.run()
-    runner.write(out, sort_by="name", ascending=False)
+    runner.write(None, out, sort_by="name", ascending=False)
     rows = list(csv.DictReader(out.open()))
     names = [r["name"] for r in rows]
     assert names == sorted(names, reverse=True)
@@ -130,7 +130,7 @@ def test_write_sort_by_multiple(simple_csv: Path, tmp_path: Path) -> None:
     out = tmp_path / "out.csv"
     runner = Runner(None, simple_csv, ["name"])
     runner.run()
-    runner.write(out, sort_by=["name", "email"], ascending=[True, False])
+    runner.write(None, out, sort_by=["name", "email"], ascending=[True, False])
     rows = list(csv.DictReader(out.open()))
     assert len(rows) == 3
 
@@ -139,7 +139,7 @@ def test_write_keep(simple_csv: Path, tmp_path: Path) -> None:
     out = tmp_path / "out.csv"
     runner = Runner(None, simple_csv, ["name"])
     runner.run()
-    runner.write(out, keep=["name", "email"])
+    runner.write(None, out, keep=["name", "email"])
     rows = list(csv.DictReader(out.open()))
     assert list(rows[0].keys()) == ["name", "email"]
 
@@ -148,7 +148,7 @@ def test_write_drop(simple_csv: Path, tmp_path: Path) -> None:
     out = tmp_path / "out.csv"
     runner = Runner(None, simple_csv, ["name"])
     runner.run()
-    runner.write(out, drop=["row number", "row status", "message"])
+    runner.write(None, out, drop=["row number", "row status", "message"])
     rows = list(csv.DictReader(out.open()))
     assert "row number" not in rows[0]
     assert "name" in rows[0]
@@ -159,14 +159,14 @@ def test_write_keep_and_drop_raises(simple_csv: Path, tmp_path: Path) -> None:
     runner = Runner(None, simple_csv, ["name"])
     runner.run()
     with pytest.raises(ValueError, match="Cannot specify both"):
-        runner.write(out, keep=["name"], drop=["email"])
+        runner.write(None, out, keep=["name"], drop=["email"])
 
 
 def test_write_column_order(simple_csv: Path, tmp_path: Path) -> None:
     out = tmp_path / "out.csv"
     runner = Runner(None, simple_csv, ["name"])
     runner.run()
-    runner.write(out, column_order=["email", "name"])
+    runner.write(None, out, column_order=["email", "name"])
     rows = list(csv.DictReader(out.open()))
     keys = list(rows[0].keys())
     assert keys[0] == "email"
@@ -178,7 +178,7 @@ def test_write_column_order_unlisted_follow(simple_csv: Path, tmp_path: Path) ->
     out = tmp_path / "out.csv"
     runner = Runner(None, simple_csv, ["name"])
     runner.run()
-    runner.write(out, column_order=["row number"])
+    runner.write(None, out, column_order=["row number"])
     keys = next(iter(csv.DictReader(out.open()))).keys()
     assert next(iter(keys)) == "row number"
 
@@ -189,7 +189,7 @@ def test_sort_numeric_aware(tmp_path: Path) -> None:
     out = tmp_path / "out.csv"
     runner = Runner(None, csv_path, ["val"])
     runner.run()
-    runner.write(out, sort_by="val")
+    runner.write(None, out, sort_by="val")
     rows = list(csv.DictReader(out.open()))
     vals = [r["val"] for r in rows]
     assert vals == ["5", "10", "abc"]
