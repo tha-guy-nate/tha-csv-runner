@@ -44,6 +44,19 @@ def test_run_bad_processor_spec(simple_csv: Path) -> None:
     assert result.exit_code != 0
 
 
+def test_run_writes_output(simple_csv: Path, tmp_path: Path) -> None:
+    out = tmp_path / "out.csv"
+    result = CliRunner().invoke(main, [
+        "run",
+        "--input", str(simple_csv),
+        "--output", str(out),
+        "--processor", "tests.fixtures.processors:noop",
+    ])
+    assert result.exit_code == 0, result.output
+    assert out.exists()
+    assert out.stat().st_size > 0
+
+
 def test_run_missing_header_error(simple_csv: Path) -> None:
     result = CliRunner().invoke(main, [
         "run",

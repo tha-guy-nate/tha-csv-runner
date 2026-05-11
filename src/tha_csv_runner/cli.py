@@ -36,11 +36,13 @@ def main() -> None:
 @click.option("--header", "required_headers", multiple=True, help="Required CSV header (repeatable)")
 @click.option("--processor", "processor_spec", default=None, help="Processor in 'module:function' format (optional)")
 @click.option("--sample", default=None, type=int, help="Process only the first N rows")
+@click.option("--output", "output_path", default=None, help="Output CSV path (auto-named if omitted)")
 def run(
     input_path: str,
     processor_spec: str | None,
     required_headers: tuple[str, ...],
     sample: int | None,
+    output_path: str | None,
 ) -> None:
     """Run a processor function over every row of a CSV."""
     if not Path(input_path).exists():
@@ -56,12 +58,15 @@ def run(
             sys.exit(1)
 
     try:
-        Runner(
+        runner = Runner(
             input_path=input_path,
             required_headers=list(required_headers),
             processor=processor,
             sample=sample,
-        ).run()
+        )
+        runner.run()
+        out = runner.write(output_path=output_path)
+        click.echo(f"Wrote {out}")
     except ConfigError as exc:
         click.echo(f"Error: {exc}", err=True)
         sys.exit(1)
