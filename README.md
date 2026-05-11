@@ -21,9 +21,10 @@ def process(row: dict) -> None:
         raise ValueError("invalid email domain")
 
 runner = Runner(
-    input_path="data.csv",
-    required_headers=["name", "email"],
-    processor=process,
+    "Step 1 of 1",
+    "data.csv",
+    ["name", "email"],
+    process,
 )
 runner.run()
 runner.write("output.csv")
@@ -32,11 +33,11 @@ runner.write("output.csv")
 ## How it works
 
 1. Opens the CSV and validates that all `required_headers` are present — raises immediately if any are missing
-2. Iterates every row with a `tqdm` progress bar
+2. Iterates every row with a `tqdm` progress bar labelled with `desc`
 3. Calls your `processor(row)` function — if it raises, that row is marked as an error and processing continues
-4. Appends three columns to every row: `row_number`, `row_status`, and `message`
-   - On success: `row_status` and `message` are blank
-   - On error: `row_status = "error"`, `message = str(exception)`
+4. Appends three columns to every row: `row number`, `row status`, and `message`
+   - On success: `row status` and `message` are blank
+   - On error: `row status = "error"`, `message = str(exception)`
 5. `write()` writes all rows (success and error) to a CSV
 
 ## API
@@ -45,12 +46,16 @@ runner.write("output.csv")
 
 ```python
 Runner(
-    input_path="data.csv",       # path to input CSV
-    required_headers=["a", "b"], # columns that must exist — raises ConfigError if missing
-    processor=my_func,           # optional: callable(row: dict) -> None
-    sample=100,                  # optional: process only the first N rows
+    "Step 2 of 10",          # progress bar label — pass None to use the filename
+    "data.csv",              # path to input CSV
+    ["a", "b"],              # columns that must exist — raises ConfigError if missing
+    processor=my_func,       # optional: callable(row: dict) -> None
+    sample=100,              # optional: process only the first N rows
+    enrich=True,             # optional: set False to skip row number/status/message columns
 )
 ```
+
+When `enrich=False`, processor exceptions are re-raised instead of captured.
 
 ### `runner.run()`
 
@@ -65,7 +70,7 @@ runner.write(
     ascending=True,                    # optional — bool or list of bools matching sort_by
     column_order=["name", "email"],    # optional — listed columns come first, rest follow
     keep=["name", "email"],            # optional — keep only these columns (mutually exclusive with drop)
-    drop=["row_number"],               # optional — remove these columns (mutually exclusive with keep)
+    drop=["row number"],               # optional — remove these columns (mutually exclusive with keep)
 )
 ```
 

@@ -17,34 +17,34 @@ def fail_on_bob(row: dict) -> None:
 
 
 def test_happy_path(simple_csv: Path) -> None:
-    runner = Runner(input_path=simple_csv, required_headers=["id", "name", "email"], processor=noop)
+    runner = Runner(None, simple_csv, ["id", "name", "email"], noop)
     runner.run()
     assert len(runner.rows) == 3
-    assert all(r["row_status"] == "" for r in runner.rows)
+    assert all(r["row status"] == "" for r in runner.rows)
 
 
 def test_row_number_injected(simple_csv: Path) -> None:
-    runner = Runner(input_path=simple_csv, required_headers=["name"])
+    runner = Runner(None, simple_csv, ["name"])
     runner.run()
-    assert runner.rows[0]["row_number"] == 1
-    assert runner.rows[2]["row_number"] == 3
+    assert runner.rows[0]["row number"] == 1
+    assert runner.rows[2]["row number"] == 3
 
 
 def test_message_and_status_columns_present(simple_csv: Path) -> None:
-    runner = Runner(input_path=simple_csv, required_headers=["name"])
+    runner = Runner(None, simple_csv, ["name"])
     runner.run()
     for row in runner.rows:
-        assert "row_number" in row
-        assert "row_status" in row
+        assert "row number" in row
+        assert "row status" in row
         assert "message" in row
 
 
 def test_error_row_captured(simple_csv: Path) -> None:
-    runner = Runner(input_path=simple_csv, processor=fail_on_bob, required_headers=["name"])
+    runner = Runner(None, simple_csv, ["name"], fail_on_bob)
     runner.run()
 
-    errors = [r for r in runner.rows if r["row_status"] == "error"]
-    success = [r for r in runner.rows if r["row_status"] == ""]
+    errors = [r for r in runner.rows if r["row status"] == "error"]
+    success = [r for r in runner.rows if r["row status"] == ""]
 
     assert len(errors) == 1
     assert errors[0]["name"] == "Bob"
@@ -53,19 +53,19 @@ def test_error_row_captured(simple_csv: Path) -> None:
 
 
 def test_missing_required_header_raises(simple_csv: Path) -> None:
-    runner = Runner(input_path=simple_csv, required_headers=["id", "phone"])
+    runner = Runner(None, simple_csv, ["id", "phone"])
     with pytest.raises(ConfigError, match="Missing required headers"):
         runner.run()
 
 
 def test_sample_limits_rows(simple_csv: Path) -> None:
-    runner = Runner(input_path=simple_csv, required_headers=["name"], sample=2)
+    runner = Runner(None, simple_csv, ["name"], sample=2)
     runner.run()
     assert len(runner.rows) == 2
 
 
 def test_original_columns_preserved(simple_csv: Path) -> None:
-    runner = Runner(input_path=simple_csv, required_headers=["name", "email"])
+    runner = Runner(None, simple_csv, ["name", "email"])
     runner.run()
     assert runner.rows[0]["name"] == "Alice"
     assert runner.rows[0]["email"] == "alice@example.com"
@@ -73,7 +73,7 @@ def test_original_columns_preserved(simple_csv: Path) -> None:
 
 def test_write_creates_file(simple_csv: Path, tmp_path: Path) -> None:
     out = tmp_path / "out.csv"
-    runner = Runner(input_path=simple_csv, required_headers=["name"])
+    runner = Runner(None, simple_csv, ["name"])
     runner.run()
     runner.write(out)
     assert out.exists()
@@ -81,7 +81,7 @@ def test_write_creates_file(simple_csv: Path, tmp_path: Path) -> None:
 
 def test_write_contains_all_rows(simple_csv: Path, tmp_path: Path) -> None:
     out = tmp_path / "out.csv"
-    runner = Runner(input_path=simple_csv, required_headers=["name"])
+    runner = Runner(None, simple_csv, ["name"])
     runner.run()
     runner.write(out)
     rows = list(csv.DictReader(out.open()))
@@ -90,12 +90,12 @@ def test_write_contains_all_rows(simple_csv: Path, tmp_path: Path) -> None:
 
 def test_write_includes_enriched_columns(simple_csv: Path, tmp_path: Path) -> None:
     out = tmp_path / "out.csv"
-    runner = Runner(input_path=simple_csv, required_headers=["name"])
+    runner = Runner(None, simple_csv, ["name"])
     runner.run()
     runner.write(out)
     rows = list(csv.DictReader(out.open()))
-    assert "row_number" in rows[0]
-    assert "row_status" in rows[0]
+    assert "row number" in rows[0]
+    assert "row status" in rows[0]
     assert "message" in rows[0]
 
 
@@ -103,7 +103,7 @@ def test_write_auto_names_file(
     simple_csv: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.chdir(tmp_path)
-    runner = Runner(input_path=simple_csv, required_headers=["name"])
+    runner = Runner(None, simple_csv, ["name"])
     runner.run()
     out = runner.write()
     assert out.name.startswith("simple_processed_")
@@ -111,14 +111,14 @@ def test_write_auto_names_file(
 
 
 def test_write_before_run_raises(simple_csv: Path) -> None:
-    runner = Runner(input_path=simple_csv, required_headers=["name"])
+    runner = Runner(None, simple_csv, ["name"])
     with pytest.raises(RuntimeError, match=r"call run\(\)"):
         runner.write()
 
 
 def test_write_sort_by_single(simple_csv: Path, tmp_path: Path) -> None:
     out = tmp_path / "out.csv"
-    runner = Runner(input_path=simple_csv, required_headers=["name"])
+    runner = Runner(None, simple_csv, ["name"])
     runner.run()
     runner.write(out, sort_by="name", ascending=False)
     rows = list(csv.DictReader(out.open()))
@@ -128,7 +128,7 @@ def test_write_sort_by_single(simple_csv: Path, tmp_path: Path) -> None:
 
 def test_write_sort_by_multiple(simple_csv: Path, tmp_path: Path) -> None:
     out = tmp_path / "out.csv"
-    runner = Runner(input_path=simple_csv, required_headers=["name"])
+    runner = Runner(None, simple_csv, ["name"])
     runner.run()
     runner.write(out, sort_by=["name", "email"], ascending=[True, False])
     rows = list(csv.DictReader(out.open()))
@@ -137,7 +137,7 @@ def test_write_sort_by_multiple(simple_csv: Path, tmp_path: Path) -> None:
 
 def test_write_keep(simple_csv: Path, tmp_path: Path) -> None:
     out = tmp_path / "out.csv"
-    runner = Runner(input_path=simple_csv, required_headers=["name"])
+    runner = Runner(None, simple_csv, ["name"])
     runner.run()
     runner.write(out, keep=["name", "email"])
     rows = list(csv.DictReader(out.open()))
@@ -146,17 +146,17 @@ def test_write_keep(simple_csv: Path, tmp_path: Path) -> None:
 
 def test_write_drop(simple_csv: Path, tmp_path: Path) -> None:
     out = tmp_path / "out.csv"
-    runner = Runner(input_path=simple_csv, required_headers=["name"])
+    runner = Runner(None, simple_csv, ["name"])
     runner.run()
-    runner.write(out, drop=["row_number", "row_status", "message"])
+    runner.write(out, drop=["row number", "row status", "message"])
     rows = list(csv.DictReader(out.open()))
-    assert "row_number" not in rows[0]
+    assert "row number" not in rows[0]
     assert "name" in rows[0]
 
 
 def test_write_keep_and_drop_raises(simple_csv: Path, tmp_path: Path) -> None:
     out = tmp_path / "out.csv"
-    runner = Runner(input_path=simple_csv, required_headers=["name"])
+    runner = Runner(None, simple_csv, ["name"])
     runner.run()
     with pytest.raises(ValueError, match="Cannot specify both"):
         runner.write(out, keep=["name"], drop=["email"])
@@ -164,33 +164,59 @@ def test_write_keep_and_drop_raises(simple_csv: Path, tmp_path: Path) -> None:
 
 def test_write_column_order(simple_csv: Path, tmp_path: Path) -> None:
     out = tmp_path / "out.csv"
-    runner = Runner(input_path=simple_csv, required_headers=["name"])
+    runner = Runner(None, simple_csv, ["name"])
     runner.run()
     runner.write(out, column_order=["email", "name"])
     rows = list(csv.DictReader(out.open()))
     keys = list(rows[0].keys())
     assert keys[0] == "email"
     assert keys[1] == "name"
-    assert "id" in keys  # unlisted columns still present
+    assert "id" in keys
 
 
 def test_write_column_order_unlisted_follow(simple_csv: Path, tmp_path: Path) -> None:
     out = tmp_path / "out.csv"
-    runner = Runner(input_path=simple_csv, required_headers=["name"])
+    runner = Runner(None, simple_csv, ["name"])
     runner.run()
-    runner.write(out, column_order=["row_number"])
+    runner.write(out, column_order=["row number"])
     keys = next(iter(csv.DictReader(out.open()))).keys()
-    assert next(iter(keys)) == "row_number"
+    assert next(iter(keys)) == "row number"
 
 
 def test_sort_numeric_aware(tmp_path: Path) -> None:
     csv_path = tmp_path / "mixed.csv"
     csv_path.write_text("id,val\n1,10\n2,5\n3,abc\n")
     out = tmp_path / "out.csv"
-    runner = Runner(input_path=csv_path, required_headers=["val"])
+    runner = Runner(None, csv_path, ["val"])
     runner.run()
     runner.write(out, sort_by="val")
     rows = list(csv.DictReader(out.open()))
     vals = [r["val"] for r in rows]
-    # numeric sort: 5 < 10, then strings after all numerics
     assert vals == ["5", "10", "abc"]
+
+
+def test_desc_used_as_tqdm_label(simple_csv: Path) -> None:
+    runner = Runner("Step 2 of 10", simple_csv, ["name"])
+    assert runner.desc == "Step 2 of 10"
+
+
+def test_enrich_false_omits_enriched_columns(simple_csv: Path) -> None:
+    runner = Runner(None, simple_csv, ["name"], enrich=False)
+    runner.run()
+    for row in runner.rows:
+        assert "row number" not in row
+        assert "row status" not in row
+        assert "message" not in row
+
+
+def test_enrich_false_preserves_original_columns(simple_csv: Path) -> None:
+    runner = Runner(None, simple_csv, ["name", "email"], enrich=False)
+    runner.run()
+    assert runner.rows[0]["name"] == "Alice"
+    assert runner.rows[0]["email"] == "alice@example.com"
+
+
+def test_enrich_false_processor_error_still_raises(simple_csv: Path) -> None:
+    runner = Runner(None, simple_csv, ["name"], fail_on_bob, enrich=False)
+    with pytest.raises(ValueError, match="Bob is not allowed"):
+        runner.run()

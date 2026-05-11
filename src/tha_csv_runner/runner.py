@@ -19,15 +19,19 @@ def _sort_key(val: object) -> tuple:
 class Runner:
     def __init__(
         self,
+        desc: str | None,
         input_path: str | Path,
         required_headers: list[str],
         processor: Callable[[dict], None] | None = None,
         sample: int | None = None,
+        enrich: bool = True,
     ) -> None:
+        self.desc = desc
         self.input_path = Path(input_path)
         self.processor = processor
         self.required_headers = required_headers
         self.sample = sample
+        self.enrich = enrich
         self.rows: list[dict] = []
         self._ran: bool = False
 
@@ -51,14 +55,21 @@ class Runner:
         self.rows = []
         self._ran = True
 
-        for i, row in enumerate(tqdm(raw_rows, desc=f"Reading {self.input_path.name}"), start=1):
-            enriched = {**row, "row_number": i, "row_status": "", "message": ""}
+        label = self.desc if self.desc is not None else self.input_path.name
+        for i, row in enumerate(tqdm(raw_rows, desc=label), start=1):
+            if self.enrich:
+                enriched = {**row, "row number": i, "row status": "", "message": ""}
+            else:
+                enriched = dict(row)
             try:
                 if self.processor is not None:
                     self.processor(enriched)
             except Exception as exc:
-                enriched["row_status"] = "error"
-                enriched["message"] = str(exc)
+                if self.enrich:
+                    enriched["row status"] = "error"
+                    enriched["message"] = str(exc)
+                else:
+                    raise
             self.rows.append(enriched)
 
     def write(
