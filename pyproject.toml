@@ -1,0 +1,40 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tha-csv-runner"
+version = "0.1.0"
+description = "Run a function over every row of a CSV — with progress, header validation, and structured per-row errors."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Nate Wright" }]
+requires-python = ">=3.10"
+dependencies = [
+    "click>=8.1",
+    "tqdm>=4.66",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "ruff>=0.5",
+    "mypy>=1.10",
+]
+
+[project.scripts]
+tha-csv-runner = "tha_csv_runner.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/tha-guy-nate/tha-csv-runner"
+Issues = "https://github.com/tha-guy-nate/tha-csv-runner/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tha_csv_runner"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
