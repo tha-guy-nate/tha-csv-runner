@@ -52,7 +52,6 @@ runner.read(
     "data.csv",              # path to input CSV
     ["a", "b"],              # columns that must exist — raises ConfigError if missing
     processor=my_func,       # optional: callable(row: dict) -> None
-    sample=100,              # optional: process only the first N rows
     enrich=True,             # optional: set False to skip row number/status/message columns
 )
 ```

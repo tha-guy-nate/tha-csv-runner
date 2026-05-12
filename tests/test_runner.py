@@ -58,11 +58,6 @@ def test_missing_required_header_raises(simple_csv: Path) -> None:
         runner.read(None, simple_csv, ["id", "phone"])
 
 
-def test_sample_limits_rows(simple_csv: Path) -> None:
-    runner = ThaCSV()
-    runner.read(None, simple_csv, ["name"], sample=2)
-    assert len(runner.rows) == 2
-
 
 def test_original_columns_preserved(simple_csv: Path) -> None:
     runner = ThaCSV()

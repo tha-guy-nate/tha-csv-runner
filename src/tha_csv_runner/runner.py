@@ -28,7 +28,6 @@ class ThaCSV:
         input_path: str | Path,
         required_headers: list[str],
         processor: Callable[[dict], None] | None = None,
-        sample: int | None = None,
         enrich: bool = True,
     ) -> None:
         self._input_path = Path(input_path)
@@ -41,9 +40,6 @@ class ThaCSV:
             if missing:
                 raise ConfigError(f"Missing required headers: {missing}")
             raw_rows = list(reader)
-
-        if sample is not None:
-            raw_rows = raw_rows[:sample]
 
         self.rows = []
         self._read = True
