@@ -30,7 +30,7 @@ runner.write("Step 1 of 1", "output.csv")
 
 1. Opens the CSV and validates that all `required_headers` are present — raises immediately if any are missing
 2. Iterates every row with a `tqdm` progress bar labelled with `desc`
-3. Calls your `processor(row)` function — if it raises, that row is marked as an error and processing continues
+3. Calls your `validator(row)` function — if it raises, that row is marked as an error and processing continues
 4. Appends three columns to every row: `row number`, `row status`, and `message`
    - On success: `row status` and `message` are blank
    - On error: `row status = "error"`, `message = str(exception)`
@@ -51,14 +51,14 @@ runner.read(
     "Step 2 of 10",          # progress bar label — pass None to use the filename
     "data.csv",              # path to input CSV
     ["a", "b"],              # columns that must exist — raises ConfigError if missing
-    processor=my_func,       # optional: callable(row: dict) -> None
+    validator=my_func,       # optional: callable(row: dict) -> None
     enrich=True,             # optional: set False to skip row number/status/message columns
 )
 ```
 
 Reads and processes all rows. Results are stored in `runner.rows` as a list of dicts.
 
-When `enrich=False`, processor exceptions are re-raised instead of captured.
+When `enrich=False`, validator exceptions are re-raised instead of captured.
 
 ### `runner.write()`
 

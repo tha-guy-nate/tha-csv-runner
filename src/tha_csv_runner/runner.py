@@ -27,7 +27,7 @@ class ThaCSV:
         desc: str | None,
         input_path: str | Path,
         required_headers: list[str],
-        processor: Callable[[dict], None] | None = None,
+        validator: Callable[[dict], None] | None = None,
         enrich: bool = True,
     ) -> None:
         self._input_path = Path(input_path)
@@ -51,8 +51,8 @@ class ThaCSV:
             else:
                 enriched = dict(row)
             try:
-                if processor is not None:
-                    processor(enriched)
+                if validator is not None:
+                    validator(enriched)
             except Exception as exc:
                 if enrich:
                     enriched["row status"] = "error"

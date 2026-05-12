@@ -212,7 +212,7 @@ def test_enrich_false_preserves_original_columns(simple_csv: Path) -> None:
     assert runner.rows[0]["email"] == "alice@example.com"
 
 
-def test_enrich_false_processor_error_still_raises(simple_csv: Path) -> None:
+def test_enrich_false_validator_error_still_raises(simple_csv: Path) -> None:
     runner = ThaCSV()
     with pytest.raises(ValueError, match="Bob is not allowed"):
         runner.read(None, simple_csv, ["name"], fail_on_bob, enrich=False)
