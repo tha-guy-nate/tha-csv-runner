@@ -29,7 +29,7 @@ class ThaCSV:
         required_headers: list[str],
         validator: Callable[[dict], None] | None = None,
         enrich: bool = True,
-    ) -> None:
+    ) -> list[dict]:
         self._input_path = Path(input_path)
 
         with open(self._input_path, newline="", encoding="utf-8") as f:
@@ -60,6 +60,8 @@ class ThaCSV:
                 else:
                     raise
             self.rows.append(enriched)
+
+        return self.rows
 
     def write(
         self,

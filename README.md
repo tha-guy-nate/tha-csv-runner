@@ -22,7 +22,7 @@ def process(row: dict) -> None:
 
 runner = ThaCSV()
 
-runner.read("Step 1 of 1", "data.csv", ["name", "email"], process)
+rows = runner.read("Step 1 of 1", "data.csv", ["name", "email"], process)
 runner.write("Step 1 of 1", "output.csv")
 ```
 
@@ -56,7 +56,7 @@ runner.read(
 )
 ```
 
-Reads and processes all rows. Results are stored in `runner.rows` as a list of dicts.
+Reads and processes all rows. Returns the rows as a `list[dict]` (same object as `runner.rows`).
 
 When `enrich=False`, validator exceptions are re-raised instead of captured.
 

@@ -23,6 +23,13 @@ def test_happy_path(simple_csv: Path) -> None:
     assert all(r["row status"] == "" for r in runner.rows)
 
 
+def test_read_returns_rows(simple_csv: Path) -> None:
+    runner = ThaCSV()
+    result = runner.read(None, simple_csv, ["name"])
+    assert result is runner.rows
+    assert len(result) == 3
+
+
 def test_row_number_injected(simple_csv: Path) -> None:
     runner = ThaCSV()
     runner.read(None, simple_csv, ["name"])
