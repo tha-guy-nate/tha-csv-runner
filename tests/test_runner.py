@@ -33,8 +33,8 @@ def test_read_returns_rows(simple_csv: Path) -> None:
 def test_row_number_injected(simple_csv: Path) -> None:
     runner = ThaCSV()
     runner.read(None, simple_csv, ["name"])
-    assert runner.rows[0]["row number"] == 1
-    assert runner.rows[2]["row number"] == 3
+    assert runner.rows[0]["row number"] == 2
+    assert runner.rows[2]["row number"] == 4
 
 
 def test_message_and_status_columns_present(simple_csv: Path) -> None:
@@ -223,3 +223,68 @@ def test_enrich_false_validator_error_still_raises(simple_csv: Path) -> None:
     runner = ThaCSV()
     with pytest.raises(ValueError, match="Bob is not allowed"):
         runner.read(None, simple_csv, ["name"], fail_on_bob, enrich=False)
+
+
+# --- chunk_size ---
+
+def test_chunk_size_returns_list(simple_csv: Path, tmp_path: Path) -> None:
+    runner = ThaCSV()
+    runner.read(None, simple_csv, ["name"])
+    result = runner.write(None, tmp_path / "out.csv", chunk_size=2)
+    assert isinstance(result, list)
+
+
+def test_chunk_size_correct_file_count(simple_csv: Path, tmp_path: Path) -> None:
+    runner = ThaCSV()
+    runner.read(None, simple_csv, ["name"])
+    paths = runner.write(None, tmp_path / "out.csv", chunk_size=2)
+    assert isinstance(paths, list)
+    assert len(paths) == 2  # 3 rows → chunks of 2, 1
+
+
+def test_chunk_size_files_exist(simple_csv: Path, tmp_path: Path) -> None:
+    runner = ThaCSV()
+    runner.read(None, simple_csv, ["name"])
+    paths = runner.write(None, tmp_path / "out.csv", chunk_size=2)
+    assert isinstance(paths, list)
+    assert all(p.exists() for p in paths)
+
+
+def test_chunk_size_naming(simple_csv: Path, tmp_path: Path) -> None:
+    runner = ThaCSV()
+    runner.read(None, simple_csv, ["name"])
+    paths = runner.write(None, tmp_path / "out.csv", chunk_size=2)
+    assert isinstance(paths, list)
+    assert paths[0].name == "out_001.csv"
+    assert paths[1].name == "out_002.csv"
+
+
+def test_chunk_size_total_rows(simple_csv: Path, tmp_path: Path) -> None:
+    runner = ThaCSV()
+    runner.read(None, simple_csv, ["name"])
+    paths = runner.write(None, tmp_path / "out.csv", chunk_size=2)
+    assert isinstance(paths, list)
+    total = sum(len(list(csv.DictReader(p.open()))) for p in paths)
+    assert total == 3
+
+
+def test_chunk_size_larger_than_rows(simple_csv: Path, tmp_path: Path) -> None:
+    runner = ThaCSV()
+    runner.read(None, simple_csv, ["name"])
+    paths = runner.write(None, tmp_path / "out.csv", chunk_size=100)
+    assert isinstance(paths, list)
+    assert len(paths) == 1
+
+
+def test_chunk_size_zero_raises(simple_csv: Path, tmp_path: Path) -> None:
+    runner = ThaCSV()
+    runner.read(None, simple_csv, ["name"])
+    with pytest.raises(ValueError, match="chunk_size"):
+        runner.write(None, tmp_path / "out.csv", chunk_size=0)
+
+
+def test_no_chunk_size_returns_path(simple_csv: Path, tmp_path: Path) -> None:
+    runner = ThaCSV()
+    runner.read(None, simple_csv, ["name"])
+    result = runner.write(None, tmp_path / "out.csv")
+    assert isinstance(result, Path)

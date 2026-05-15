@@ -1,5 +1,6 @@
 import csv
 import functools
+import shutil
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
@@ -9,11 +10,27 @@ from tqdm import tqdm
 from .errors import ConfigError
 
 
+def tqdm_ncols(max_cols: int = 85) -> int:
+    return min(shutil.get_terminal_size(fallback=(max_cols, 24)).columns, max_cols)
+
+
 def _sort_key(val: object) -> tuple:
     try:
         return (0, float(val))  # type: ignore[arg-type]
     except (TypeError, ValueError):
         return (1, str(val))
+
+
+def _write_chunk(path: Path, rows: list[dict], cols: list[str], label: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        if rows:
+            writer = csv.DictWriter(f, fieldnames=cols)
+            writer.writeheader()
+            writer.writerows(
+                {c: row[c] for c in cols if c in row}
+                for row in tqdm(rows, desc=label, ncols=tqdm_ncols())
+            )
 
 
 class ThaCSV:
@@ -45,7 +62,7 @@ class ThaCSV:
         self._read = True
 
         label = desc if desc is not None else self._input_path.name
-        for i, row in enumerate(tqdm(raw_rows, desc=label), start=1):
+        for i, row in enumerate(tqdm(raw_rows, desc=label, ncols=tqdm_ncols()), start=2):
             if enrich:
                 enriched = {**row, "row number": i, "row status": "", "message": ""}
             else:
@@ -72,11 +89,14 @@ class ThaCSV:
         column_order: list[str] | None = None,
         keep: list[str] | None = None,
         drop: list[str] | None = None,
-    ) -> Path:
+        chunk_size: int | None = None,
+    ) -> Path | list[Path]:
         if not self._read:
             raise RuntimeError("No data to write — call read() first")
         if keep and drop:
             raise ValueError("Cannot specify both keep and drop")
+        if chunk_size is not None and chunk_size < 1:
+            raise ValueError("chunk_size must be >= 1")
 
         rows = list(self.rows)
 
@@ -121,16 +141,18 @@ class ThaCSV:
             output_path = Path(f"{stem}_processed_{ts}.csv")
 
         out = Path(output_path)
-        out.parent.mkdir(parents=True, exist_ok=True)
+
+        # --- chunked write ---
+        if chunk_size is not None:
+            chunks = [rows[i:i + chunk_size] for i in range(0, max(len(rows), 1), chunk_size)]
+            paths = []
+            for idx, chunk in enumerate(chunks, start=1):
+                chunk_path = out.parent / f"{out.stem}_{idx:03d}{out.suffix}"
+                label = f"{desc} ({idx}/{len(chunks)})" if desc else chunk_path.name
+                _write_chunk(chunk_path, chunk, cols, label)
+                paths.append(chunk_path)
+            return paths
 
         write_label = desc if desc is not None else out.name
-        with open(out, "w", newline="", encoding="utf-8") as f:
-            if rows:
-                writer = csv.DictWriter(f, fieldnames=cols)
-                writer.writeheader()
-                writer.writerows(
-                    {c: row[c] for c in cols if c in row}
-                    for row in tqdm(rows, desc=write_label)
-                )
-
+        _write_chunk(out, rows, cols, write_label)
         return out

@@ -22,8 +22,8 @@ def process(row: dict) -> None:
 
 runner = ThaCSV()
 
-rows = runner.read("Step 1 of 1", "data.csv", ["name", "email"], process)
-runner.write("Step 1 of 1", "output.csv")
+rows = runner.read("Step 1 of 2", "data.csv", ["name", "email"], process)
+runner.write("Step 2 of 2", "output.csv")
 ```
 
 ## How it works
@@ -32,6 +32,7 @@ runner.write("Step 1 of 1", "output.csv")
 2. Iterates every row with a `tqdm` progress bar labelled with `desc`
 3. Calls your `validator(row)` function — if it raises, that row is marked as an error and processing continues
 4. Appends three columns to every row: `row number`, `row status`, and `message`
+   - `row number` starts at 2 (row 1 is the header)
    - On success: `row status` and `message` are blank
    - On error: `row status = "error"`, `message = str(exception)`
 5. `write()` writes all rows (success and error) to a CSV
@@ -48,7 +49,7 @@ ThaCSV()
 
 ```python
 runner.read(
-    "Step 2 of 10",          # progress bar label — pass None to use the filename
+    "Step 1 of 2",           # progress bar label — pass None to use the filename
     "data.csv",              # path to input CSV
     ["a", "b"],              # columns that must exist — raises ConfigError if missing
     validator=my_func,       # optional: callable(row: dict) -> None
@@ -64,17 +65,27 @@ When `enrich=False`, validator exceptions are re-raised instead of captured.
 
 ```python
 runner.write(
-    "Step 10 of 10",                   # progress bar label — pass None to use the output filename
+    "Step 2 of 2",                     # progress bar label — pass None to use the output filename
     output_path="output.csv",          # optional — auto-named input_processed_TIMESTAMP.csv if omitted
     sort_by="name",                    # optional — column name, or list of column names
     ascending=True,                    # optional — bool or list of bools matching sort_by
     column_order=["name", "email"],    # optional — listed columns come first, rest follow
     keep=["name", "email"],            # optional — keep only these columns (mutually exclusive with drop)
     drop=["row number"],               # optional — remove these columns (mutually exclusive with keep)
+    chunk_size=1000,                   # optional — split output into files of this many rows
 )
 ```
 
-Returns the `Path` that was written.
+Returns the `Path` that was written, or a `list[Path]` when `chunk_size` is set.
+
+#### `chunk_size`
+
+When provided, `write()` splits the output into multiple files named `output_001.csv`, `output_002.csv`, etc. and returns a `list[Path]`.
+
+```python
+paths = runner.write("Step 2 of 2", "output.csv", chunk_size=1000)
+# ["output_001.csv", "output_002.csv", ...]
+```
 
 ## License
 
