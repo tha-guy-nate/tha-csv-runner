@@ -149,7 +149,8 @@ class ThaCSV:
             chunks = [rows[i:i + chunk_size] for i in range(0, max(len(rows), 1), chunk_size)]
             paths = []
             for idx, chunk in enumerate(chunks, start=1):
-                chunk_path = output_file.parent / f"{output_file.stem}_{idx:03d}{output_file.suffix}"
+                chunk_name = f"{output_file.stem}_{idx:03d}{output_file.suffix}"
+                chunk_path = output_file.parent / chunk_name
                 label = (
                     f"{desc} ({idx}/{len(chunks)})"
                     if desc
