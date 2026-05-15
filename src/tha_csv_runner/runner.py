@@ -62,7 +62,8 @@ class ThaCSV:
         self.rows = []
         self._read = True
 
-        label = desc if desc is not None else f"Reading {self._input_path.stem} CSV"
+        reading = f"Reading {self._input_path.stem} CSV"
+        label = f"{desc}: {reading}" if desc is not None else reading
         for i, row in enumerate(tqdm(raw_rows, desc=label, ncols=tqdm_ncols()), start=2):
             if enrich:
                 enriched = {**row, "row number": i, "row status": "", "message": ""}
@@ -151,17 +152,15 @@ class ThaCSV:
             for idx, chunk in enumerate(chunks, start=1):
                 chunk_name = f"{output_file.stem}_{idx:03d}{output_file.suffix}"
                 chunk_path = output_file.parent / chunk_name
-                label = (
-                    f"{desc} ({idx}/{len(chunks)})"
-                    if desc
-                    else f"Writing {output_file.stem} CSV ({idx}/{len(chunks)})"
-                )
+                writing = f"Writing {output_file.stem} CSV ({idx}/{len(chunks)})"
+                label = f"{desc} ({idx}/{len(chunks)}): {writing}" if desc else writing
                 _write_chunk(chunk_path, chunk, cols, label)
                 paths.append(chunk_path)
-            self.status_cb(f":white_check_mark: Done! CSV was written to: {paths}")
+            self.status_cb(f"✅ Done! CSV was written to: {paths}")
             return paths
 
-        write_label = desc if desc is not None else f"Writing {output_file.stem} CSV"
+        writing = f"Writing {output_file.stem} CSV"
+        write_label = f"{desc}: {writing}" if desc is not None else writing
         _write_chunk(output_file, rows, cols, write_label)
-        self.status_cb(f":white_check_mark: Done! CSV was written to: {output_file}")
+        self.status_cb(f"✅ Done! CSV was written to: {output_file}")
         return output_file
