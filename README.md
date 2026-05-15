@@ -65,8 +65,9 @@ When `enrich=False`, validator exceptions are re-raised instead of captured.
 
 ```python
 runner.write(
-    "Step 2 of 2",                     # progress bar label — pass None to use the output filename
+    "Step 2 of 2",                     # progress bar label — pass None for "Writing {stem} CSV"
     output_path="output.csv",          # optional — auto-named input_processed_TIMESTAMP.csv if omitted
+    rows=my_rows,                      # optional — use these rows instead of runner.rows
     sort_by="name",                    # optional — column name, or list of column names
     ascending=True,                    # optional — bool or list of bools matching sort_by
     column_order=["name", "email"],    # optional — listed columns come first, rest follow
@@ -75,6 +76,8 @@ runner.write(
     chunk_size=1000,                   # optional — split output into files of this many rows
 )
 ```
+
+Prints `:white_check_mark: Done! CSV was written to: {path}` on completion. Override by setting `runner.status_cb = my_fn`.
 
 Returns the `Path` that was written, or a `list[Path]` when `chunk_size` is set.
 

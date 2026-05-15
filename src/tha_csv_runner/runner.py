@@ -38,6 +38,7 @@ class ThaCSV:
         self.rows: list[dict] = []
         self._read: bool = False
         self._input_path: Path | None = None
+        self.status_cb = print
 
     def read(
         self,
@@ -61,7 +62,7 @@ class ThaCSV:
         self.rows = []
         self._read = True
 
-        label = desc if desc is not None else self._input_path.name
+        label = desc if desc is not None else f"Reading {self._input_path.stem} CSV"
         for i, row in enumerate(tqdm(raw_rows, desc=label, ncols=tqdm_ncols()), start=2):
             if enrich:
                 enriched = {**row, "row number": i, "row status": "", "message": ""}
@@ -84,6 +85,7 @@ class ThaCSV:
         self,
         desc: str | None,
         output_path: str | Path | None = None,
+        rows: list[dict] | None = None,
         sort_by: str | list[str] | None = None,
         ascending: bool | list[bool] = True,
         column_order: list[str] | None = None,
@@ -91,14 +93,14 @@ class ThaCSV:
         drop: list[str] | None = None,
         chunk_size: int | None = None,
     ) -> Path | list[Path]:
-        if not self._read:
-            raise RuntimeError("No data to write — call read() first")
+        if rows is None and not self._read:
+            raise RuntimeError("No data to write — call read() first or pass rows=")
         if keep and drop:
             raise ValueError("Cannot specify both keep and drop")
         if chunk_size is not None and chunk_size < 1:
             raise ValueError("chunk_size must be >= 1")
 
-        rows = list(self.rows)
+        rows = list(rows) if rows is not None else list(self.rows)
 
         # --- column filtering ---
         all_cols = list(rows[0].keys()) if rows else []
@@ -140,19 +142,25 @@ class ThaCSV:
             ts = datetime.now().strftime("%Y%m%d_%H%M%S")
             output_path = Path(f"{stem}_processed_{ts}.csv")
 
-        out = Path(output_path)
+        output_file = Path(output_path)
 
         # --- chunked write ---
         if chunk_size is not None:
             chunks = [rows[i:i + chunk_size] for i in range(0, max(len(rows), 1), chunk_size)]
             paths = []
             for idx, chunk in enumerate(chunks, start=1):
-                chunk_path = out.parent / f"{out.stem}_{idx:03d}{out.suffix}"
-                label = f"{desc} ({idx}/{len(chunks)})" if desc else chunk_path.name
+                chunk_path = output_file.parent / f"{output_file.stem}_{idx:03d}{output_file.suffix}"
+                label = (
+                    f"{desc} ({idx}/{len(chunks)})"
+                    if desc
+                    else f"Writing {output_file.stem} CSV ({idx}/{len(chunks)})"
+                )
                 _write_chunk(chunk_path, chunk, cols, label)
                 paths.append(chunk_path)
+            self.status_cb(f":white_check_mark: Done! CSV was written to: {paths}")
             return paths
 
-        write_label = desc if desc is not None else out.name
-        _write_chunk(out, rows, cols, write_label)
-        return out
+        write_label = desc if desc is not None else f"Writing {output_file.stem} CSV"
+        _write_chunk(output_file, rows, cols, write_label)
+        self.status_cb(f":white_check_mark: Done! CSV was written to: {output_file}")
+        return output_file

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tha-csv-runner"
-version = "0.2.3"
+version = "0.2.4"
 description = "Run a function over every row of a CSV — with progress, header validation, and structured per-row errors."
 readme = "README.md"
 license = { text = "MIT" }

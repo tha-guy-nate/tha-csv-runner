@@ -118,6 +118,17 @@ def test_write_before_read_raises(simple_csv: Path) -> None:
         runner.write(None)
 
 
+def test_write_rows_param_bypasses_read_guard(tmp_path: Path) -> None:
+    out = tmp_path / "out.csv"
+    rows = [{"name": "Alice", "val": "1"}, {"name": "Bob", "val": "2"}]
+    runner = ThaCSV()
+    result = runner.write(None, out, rows=rows)
+    assert isinstance(result, Path)
+    written = list(csv.DictReader(out.open()))
+    assert len(written) == 2
+    assert written[0]["name"] == "Alice"
+
+
 def test_write_sort_by_single(simple_csv: Path, tmp_path: Path) -> None:
     out = tmp_path / "out.csv"
     runner = ThaCSV()
