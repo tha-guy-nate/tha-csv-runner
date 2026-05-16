@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "tha-csv-runner"
 version = "0.2.6"
-description = "Run a function over every row of a CSV — with progress, header validation, and structured per-row errors."
+description = "A Tabular Helper API library that reads and writes CSVs with progress tracking, header validation, and structured per-row errors."
 readme = "README.md"
 license = { text = "MIT" }
 authors = [{ name = "Nate Wright" }]
