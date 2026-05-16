@@ -92,6 +92,11 @@ paths = runner.write("Step 2 of 2", "output.csv", chunk_size=1000)
 # ["output_001.csv", "output_002.csv", ...]
 ```
 
+## Planned
+
+- **Encoding support** — `read()` and `write()` currently assume UTF-8; a future release will add an `encoding=` parameter for files exported from Excel (`cp1252`, `latin-1`, etc.)
+- **Delimiter support** — comma is currently assumed; a future release will add a `delimiter=` parameter for TSV and other formats
+
 ## License
 
 MIT
