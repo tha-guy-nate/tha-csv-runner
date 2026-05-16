@@ -59,6 +59,8 @@ runner.read(
 
 Reads and processes all rows. Returns the rows as a `list[dict]` (same object as `runner.rows`).
 
+The `validator` is designed for **offline, in-memory checks** — field presence, format, business rules. It runs synchronously on each row; don't use it for API calls or database lookups.
+
 When `enrich=False`, validator exceptions are re-raised instead of captured.
 
 ### `runner.write()`
@@ -77,7 +79,7 @@ runner.write(
 )
 ```
 
-Prints `:white_check_mark: Done! CSV was written to: {path}` on completion. Override by setting `runner.status_cb = my_fn`.
+Prints `✅ Done! CSV was written to: {path}` on completion. Override by setting `runner.status_cb = my_fn`.
 
 Returns the `Path` that was written, or a `list[Path]` when `chunk_size` is set.
 
