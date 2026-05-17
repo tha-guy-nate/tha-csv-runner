@@ -97,6 +97,14 @@ paths = runner.write("Step 2 of 2", "output.csv", chunk_size=1000)
 - **Encoding support** — `read()` and `write()` currently assume UTF-8; a future release will add an `encoding=` parameter for files exported from Excel (`cp1252`, `latin-1`, etc.)
 - **Delimiter support** — comma is currently assumed; a future release will add a `delimiter=` parameter for TSV and other formats
 
+## Alternatives
+
+This library is intentionally limited in scope — it handles row-by-row processing with error capture and a progress bar, not data analysis or transformation. For heavier workloads:
+
+- [**pandas**](https://pandas.pydata.org) — the standard for CSV processing and in-memory data manipulation; use when you need filtering, grouping, joins, or vectorized operations
+- [**polars**](https://pola.rs) — faster alternative to pandas for large files with a cleaner API and lazy evaluation
+- [**csv**](https://docs.python.org/3/library/csv.html) (stdlib) — raw CSV reading/writing with no dependencies; sufficient when you don't need progress tracking or structured error capture
+
 ## License
 
 MIT
