@@ -105,6 +105,8 @@ This library is intentionally limited in scope — it handles row-by-row process
 - [**polars**](https://pola.rs) — faster alternative to pandas for large files with a cleaner API and lazy evaluation
 - [**csv**](https://docs.python.org/3/library/csv.html) (stdlib) — raw CSV reading/writing with no dependencies; sufficient when you don't need progress tracking or structured error capture
 
+Choose this library when you need per-row error capture with `row status` and `message` columns baked in — pandas and polars process data, they don't track individual row failures.
+
 ## License
 
 MIT
