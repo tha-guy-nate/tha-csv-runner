@@ -65,7 +65,6 @@ def test_missing_required_header_raises(simple_csv: Path) -> None:
         runner.read(None, simple_csv, ["id", "phone"])
 
 
-
 def test_original_columns_preserved(simple_csv: Path) -> None:
     runner = ThaCSV()
     runner.read(None, simple_csv, ["name", "email"])
@@ -237,6 +236,7 @@ def test_enrich_false_validator_error_still_raises(simple_csv: Path) -> None:
 
 
 # --- chunk_size ---
+
 
 def test_chunk_size_returns_list(simple_csv: Path, tmp_path: Path) -> None:
     runner = ThaCSV()
