@@ -8,7 +8,7 @@ from typing import Any
 
 from tqdm import tqdm
 
-from .errors import ConfigError
+from .errors import CsvError
 
 
 def tqdm_ncols(max_cols: int = 85) -> int:
@@ -54,10 +54,10 @@ class ThaCSV:
         with open(self._input_path, newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             if reader.fieldnames is None:
-                raise ConfigError(f"{self._input_path} appears to be empty")
+                raise CsvError(f"{self._input_path} appears to be empty")
             missing = [h for h in required_headers if h not in reader.fieldnames]
             if missing:
-                raise ConfigError(f"Missing required headers: {missing}")
+                raise CsvError(f"Missing required headers: {missing}")
             raw_rows = list(reader)
 
         self.rows = []
