@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tha-csv-runner"
-version = "0.2.7"
+version = "0.2.8"
 description = "A Tabular Helper API library that reads and writes CSVs with progress tracking, header validation, and structured per-row errors."
 readme = "README.md"
 license = { text = "MIT" }
@@ -49,6 +49,7 @@ target-version = "py310"
 select = ["E", "F", "I", "B", "UP", "RUF"]
 
 [tool.mypy]
+strict = true
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

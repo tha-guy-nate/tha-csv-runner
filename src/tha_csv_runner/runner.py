@@ -4,6 +4,7 @@ import shutil
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 from tqdm import tqdm
 
@@ -14,14 +15,14 @@ def tqdm_ncols(max_cols: int = 85) -> int:
     return min(shutil.get_terminal_size(fallback=(max_cols, 24)).columns, max_cols)
 
 
-def _sort_key(val: object) -> tuple:
+def _sort_key(val: object) -> tuple[int, float | str]:
     try:
         return (0, float(val))  # type: ignore[arg-type]
     except (TypeError, ValueError):
         return (1, str(val))
 
 
-def _write_chunk(path: Path, rows: list[dict], cols: list[str], label: str) -> None:
+def _write_chunk(path: Path, rows: list[dict[str, Any]], cols: list[str], label: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", newline="", encoding="utf-8") as f:
         if rows:
@@ -35,7 +36,7 @@ def _write_chunk(path: Path, rows: list[dict], cols: list[str], label: str) -> N
 
 class ThaCSV:
     def __init__(self) -> None:
-        self.rows: list[dict] = []
+        self.rows: list[dict[str, Any]] = []
         self._read: bool = False
         self._input_path: Path | None = None
         self.status_cb = print
@@ -45,9 +46,9 @@ class ThaCSV:
         desc: str | None,
         input_path: str | Path,
         required_headers: list[str],
-        validator: Callable[[dict], None] | None = None,
+        validator: Callable[[dict[str, Any]], None] | None = None,
         enrich: bool = True,
-    ) -> list[dict]:
+    ) -> list[dict[str, Any]]:
         self._input_path = Path(input_path)
 
         with open(self._input_path, newline="", encoding="utf-8") as f:
@@ -86,7 +87,7 @@ class ThaCSV:
         self,
         desc: str | None,
         output_path: str | Path | None = None,
-        rows: list[dict] | None = None,
+        rows: list[dict[str, Any]] | None = None,
         sort_by: str | list[str] | None = None,
         ascending: bool | list[bool] = True,
         column_order: list[str] | None = None,
@@ -126,7 +127,7 @@ class ThaCSV:
                 [ascending] * len(sort_cols) if isinstance(ascending, bool) else list(ascending)
             )
 
-            def compare(a: dict, b: dict) -> int:
+            def compare(a: dict[str, Any], b: dict[str, Any]) -> int:
                 for col, asc in zip(sort_cols, asc_list, strict=True):
                     ka, kb = _sort_key(a.get(col, "")), _sort_key(b.get(col, ""))
                     if ka < kb:
