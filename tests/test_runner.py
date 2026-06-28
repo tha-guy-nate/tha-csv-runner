@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from tha_csv_runner import ThaCSV
-from tha_csv_runner.errors import ConfigError
+from tha_csv_runner.errors import CsvError
 
 
 def noop(row: dict) -> None:
@@ -61,7 +61,7 @@ def test_error_row_captured(simple_csv: Path) -> None:
 
 def test_missing_required_header_raises(simple_csv: Path) -> None:
     runner = ThaCSV()
-    with pytest.raises(ConfigError, match="Missing required headers"):
+    with pytest.raises(CsvError, match="Missing required headers"):
         runner.read(None, simple_csv, ["id", "phone"])
 
 

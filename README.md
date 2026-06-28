@@ -54,7 +54,7 @@ ThaCSV()
 runner.read(
     "Step 1 of 2",           # progress bar label — pass None to use the filename
     "data.csv",              # path to input CSV
-    ["a", "b"],              # columns that must exist — raises ConfigError if missing
+    ["a", "b"],              # columns that must exist — raises CsvError if missing
     validator=my_func,       # optional: callable(row: dict) -> None
     enrich=True,             # optional: set False to skip row number/status/message columns
 )
