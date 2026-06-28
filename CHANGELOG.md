@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-06-28
+### Added
+- `delimiter` parameter on `ThaCSV(delimiter=",")` — pass `"\t"` for TSV or any single-character separator; defaults to `","` for full backwards compatibility.
+
 ## [0.3.1] - 2026-06-27
 ### Removed
 - `ConfigError` back-compat alias — use `CsvError` directly.
