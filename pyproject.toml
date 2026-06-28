@@ -37,6 +37,7 @@ dev = [
 [project.urls]
 Homepage = "https://github.com/tha-guy-nate/tha-csv-runner"
 Issues = "https://github.com/tha-guy-nate/tha-csv-runner/issues"
+Changelog = "https://github.com/tha-guy-nate/tha-csv-runner/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/tha_csv_runner"]

@@ -1,6 +1,9 @@
 # tha-csv-runner
 
 [![CI](https://github.com/tha-guy-nate/tha-csv-runner/actions/workflows/ci.yml/badge.svg)](https://github.com/tha-guy-nate/tha-csv-runner/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/tha-csv-runner)](https://pypi.org/project/tha-csv-runner/)
+[![Python](https://img.shields.io/pypi/pyversions/tha-csv-runner)](https://pypi.org/project/tha-csv-runner/)
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 
 A small Python library that runs a function against every row of a CSV — with a progress bar, required header validation, and structured error capture per row.
 
