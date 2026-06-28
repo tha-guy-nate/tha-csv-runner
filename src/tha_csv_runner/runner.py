@@ -23,10 +23,15 @@ def _sort_key(val: object) -> tuple[int, float | str]:
 
 
 def _write_chunk(
-    path: Path, rows: list[dict[str, Any]], cols: list[str], label: str, delimiter: str = ","
+    path: Path,
+    rows: list[dict[str, Any]],
+    cols: list[str],
+    label: str,
+    delimiter: str = ",",
+    encoding: str = "utf-8",
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w", newline="", encoding="utf-8") as f:
+    with open(path, "w", newline="", encoding=encoding) as f:
         if rows:
             writer = csv.DictWriter(f, fieldnames=cols, delimiter=delimiter)
             writer.writeheader()
@@ -37,11 +42,12 @@ def _write_chunk(
 
 
 class ThaCSV:
-    def __init__(self, delimiter: str = ",") -> None:
+    def __init__(self, delimiter: str = ",", encoding: str = "utf-8") -> None:
         self.rows: list[dict[str, Any]] = []
         self._read: bool = False
         self._input_path: Path | None = None
         self._delimiter = delimiter
+        self._encoding = encoding
         self.status_cb = print
 
     def read(
@@ -54,7 +60,7 @@ class ThaCSV:
     ) -> list[dict[str, Any]]:
         self._input_path = Path(input_path)
 
-        with open(self._input_path, newline="", encoding="utf-8") as f:
+        with open(self._input_path, newline="", encoding=self._encoding) as f:
             reader = csv.DictReader(f, delimiter=self._delimiter)
             if reader.fieldnames is None:
                 raise CsvError(f"{self._input_path} appears to be empty")
@@ -158,13 +164,13 @@ class ThaCSV:
                 chunk_path = output_file.parent / chunk_name
                 writing = f"Writing {output_file.stem} CSV ({idx}/{len(chunks)})"
                 label = f"{desc} ({idx}/{len(chunks)}): {writing}" if desc else writing
-                _write_chunk(chunk_path, chunk, cols, label, self._delimiter)
+                _write_chunk(chunk_path, chunk, cols, label, self._delimiter, self._encoding)
                 paths.append(chunk_path)
             self.status_cb(f"✅ Done! CSV was written to: {paths}")
             return paths
 
         writing = f"Writing {output_file.stem} CSV"
         write_label = f"{desc}: {writing}" if desc is not None else writing
-        _write_chunk(output_file, rows, cols, write_label, self._delimiter)
+        _write_chunk(output_file, rows, cols, write_label, self._delimiter, self._encoding)
         self.status_cb(f"✅ Done! CSV was written to: {output_file}")
         return output_file
