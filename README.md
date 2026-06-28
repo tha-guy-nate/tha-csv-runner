@@ -46,7 +46,8 @@ runner.write("Step 2 of 2", "output.csv")
 
 ```python
 ThaCSV(
-    delimiter=",",   # optional — pass "\t" for TSV, or any single-character separator
+    delimiter=",",        # optional — pass "\t" for TSV, or any single-character separator
+    encoding="utf-8",     # optional — pass "cp1252" or "latin-1" for Excel exports
 )
 ```
 
@@ -96,10 +97,6 @@ When provided, `write()` splits the output into multiple files named `output_001
 paths = runner.write("Step 2 of 2", "output.csv", chunk_size=1000)
 # ["output_001.csv", "output_002.csv", ...]
 ```
-
-## Planned
-
-- **Encoding support** — `read()` and `write()` currently assume UTF-8; a future release will add an `encoding=` parameter for files exported from Excel (`cp1252`, `latin-1`, etc.)
 
 ## Alternatives
 

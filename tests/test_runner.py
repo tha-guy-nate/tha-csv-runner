@@ -334,3 +334,39 @@ def test_default_delimiter_is_comma(simple_csv: Path) -> None:
     runner = ThaCSV()
     runner.read(None, simple_csv, ["name"])
     assert runner.rows[0]["name"] == "Alice"
+
+
+# --- encoding ---
+
+
+def test_encoding_read_cp1252(tmp_path: Path) -> None:
+    csv_path = tmp_path / "encoded.csv"
+    csv_path.write_bytes("name,city\nJos\xe9,S\xe3o Paulo\n".encode("cp1252"))
+    runner = ThaCSV(encoding="cp1252")
+    runner.read(None, csv_path, ["name"])
+    assert runner.rows[0]["name"] == "José"
+    assert runner.rows[0]["city"] == "São Paulo"
+
+
+def test_encoding_write_cp1252(tmp_path: Path) -> None:
+    csv_path = tmp_path / "encoded.csv"
+    csv_path.write_bytes("name,city\nJos\xe9,S\xe3o Paulo\n".encode("cp1252"))
+    out = tmp_path / "out.csv"
+    runner = ThaCSV(encoding="cp1252")
+    runner.read(None, csv_path, ["name"])
+    runner.write(None, out)
+    content = out.read_bytes().decode("cp1252")
+    assert "José" in content
+    assert "São Paulo" in content
+
+
+def test_encoding_roundtrip_cp1252(tmp_path: Path) -> None:
+    csv_path = tmp_path / "encoded.csv"
+    csv_path.write_bytes("name,city\nJos\xe9,S\xe3o Paulo\n".encode("cp1252"))
+    out = tmp_path / "out.csv"
+    runner = ThaCSV(encoding="cp1252")
+    runner.read(None, csv_path, ["name", "city"], enrich=False)
+    runner.write(None, out)
+    rows = list(csv.DictReader(out.open(encoding="cp1252")))
+    assert rows[0]["name"] == "José"
+    assert rows[0]["city"] == "São Paulo"
