@@ -299,3 +299,38 @@ def test_no_chunk_size_returns_path(simple_csv: Path, tmp_path: Path) -> None:
     runner.read(None, simple_csv, ["name"])
     result = runner.write(None, tmp_path / "out.csv")
     assert isinstance(result, Path)
+
+
+# --- delimiter / TSV ---
+
+
+def test_tsv_read(simple_tsv: Path) -> None:
+    runner = ThaCSV(delimiter="\t")
+    runner.read(None, simple_tsv, ["id", "name", "email"])
+    assert len(runner.rows) == 3
+    assert runner.rows[0]["name"] == "Alice"
+
+
+def test_tsv_write(simple_tsv: Path, tmp_path: Path) -> None:
+    out = tmp_path / "out.tsv"
+    runner = ThaCSV(delimiter="\t")
+    runner.read(None, simple_tsv, ["name"])
+    runner.write(None, out)
+    rows = list(csv.DictReader(out.open(), delimiter="\t"))
+    assert len(rows) == 3
+    assert rows[1]["name"] == "Bob"
+
+
+def test_tsv_roundtrip_preserves_values(simple_tsv: Path, tmp_path: Path) -> None:
+    out = tmp_path / "out.tsv"
+    runner = ThaCSV(delimiter="\t")
+    runner.read(None, simple_tsv, ["name", "email"], enrich=False)
+    runner.write(None, out)
+    rows = list(csv.DictReader(out.open(), delimiter="\t"))
+    assert rows[0] == {"name": "Alice", "email": "alice@example.com", "id": "1"}
+
+
+def test_default_delimiter_is_comma(simple_csv: Path) -> None:
+    runner = ThaCSV()
+    runner.read(None, simple_csv, ["name"])
+    assert runner.rows[0]["name"] == "Alice"
