@@ -5,6 +5,7 @@ dist/
 build/
 .venv/
 venv/
+.coverage
 *_processed_*.csv
 *_errors_*.csv
 output.csv
