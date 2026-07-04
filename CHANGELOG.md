@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-07-04
+### Fixed
+- Test coverage gaps: added tests for the empty-file `CsvError` and for a sort-key tie (`compare` returning `0`). Excluded `__main__.py` from coverage (CLI entrypoint, not exercised by pytest). Coverage is now 100%.
+
 ## [0.3.3] - 2026-06-28
 ### Added
 - `encoding` parameter on `ThaCSV(encoding="utf-8")` — pass `"cp1252"` or `"latin-1"` for files exported from Excel; defaults to `"utf-8"` for full backwards compatibility.

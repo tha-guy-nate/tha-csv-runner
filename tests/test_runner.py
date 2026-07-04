@@ -16,6 +16,14 @@ def fail_on_bob(row: dict) -> None:
         raise ValueError("Bob is not allowed")
 
 
+def test_empty_file_raises(tmp_path: Path) -> None:
+    csv_path = tmp_path / "empty.csv"
+    csv_path.write_text("")
+    runner = ThaCSV()
+    with pytest.raises(CsvError, match="appears to be empty"):
+        runner.read(None, csv_path, ["name"])
+
+
 def test_happy_path(simple_csv: Path) -> None:
     runner = ThaCSV()
     runner.read(None, simple_csv, ["id", "name", "email"], noop)
@@ -193,6 +201,17 @@ def test_write_column_order_unlisted_follow(simple_csv: Path, tmp_path: Path) ->
     runner.write(None, out, column_order=["row number"])
     keys = next(iter(csv.DictReader(out.open()))).keys()
     assert next(iter(keys)) == "row number"
+
+
+def test_sort_tie_preserves_order(tmp_path: Path) -> None:
+    csv_path = tmp_path / "tied.csv"
+    csv_path.write_text("id,name\n1,Alice\n2,Alice\n3,Alice\n")
+    out = tmp_path / "out.csv"
+    runner = ThaCSV()
+    runner.read(None, csv_path, ["name"])
+    runner.write(None, out, sort_by="name")
+    rows = list(csv.DictReader(out.open()))
+    assert [r["id"] for r in rows] == ["1", "2", "3"]
 
 
 def test_sort_numeric_aware(tmp_path: Path) -> None:
