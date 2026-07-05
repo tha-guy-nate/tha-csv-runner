@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.5] - 2026-07-04
+### Fixed
+- Added missing `keywords` to `pyproject.toml` (PyPI search had none) and fixed the README's opening line to lead with the family-standard "A Tabular Helper API library that..." description instead of a divergent one-off wording.
+
 ## [0.3.4] - 2026-07-04
 ### Fixed
 - Test coverage gaps: added tests for the empty-file `CsvError` and for a sort-key tie (`compare` returning `0`). Excluded `__main__.py` from coverage (CLI entrypoint, not exercised by pytest). Coverage is now 100%.
