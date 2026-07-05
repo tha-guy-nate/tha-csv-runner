@@ -1,11 +1,13 @@
 import csv
 import functools
+import json
 import shutil
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+import openpyxl
 from tqdm import tqdm
 
 from .errors import CsvError
@@ -22,6 +24,95 @@ def _sort_key(val: object) -> tuple[int, float | str]:
         return (1, str(val))
 
 
+def _is_excel_path(path: Path) -> bool:
+    return path.suffix.lower() == ".xlsx"
+
+
+def _is_jsonl_path(path: Path) -> bool:
+    return path.suffix.lower() == ".jsonl"
+
+
+def _read_jsonl_rows(path: Path, encoding: str) -> tuple[list[str] | None, list[dict[str, Any]]]:
+    raw_rows = []
+    with open(path, encoding=encoding) as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                raw_rows.append(json.loads(line))
+    fieldnames = list(raw_rows[0].keys()) if raw_rows else None
+    return fieldnames, raw_rows
+
+
+def _resolve_sheet(wb: Any, path: Path, sheet: str | int | None) -> Any:
+    if sheet is None:
+        return wb.active
+    if isinstance(sheet, int):
+        try:
+            return wb.worksheets[sheet]
+        except IndexError:
+            raise CsvError(
+                f"Sheet index {sheet} out of range for {path} ({len(wb.worksheets)} sheet(s))"
+            ) from None
+    try:
+        return wb[sheet]
+    except KeyError:
+        raise CsvError(
+            f"Sheet '{sheet}' not found in {path}. Available sheets: {wb.sheetnames}"
+        ) from None
+
+
+def _read_excel_rows(
+    path: Path, sheet: str | int | None = None
+) -> tuple[list[str] | None, list[dict[str, Any]]]:
+    wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+    try:
+        ws = _resolve_sheet(wb, path, sheet)
+        rows_iter = ws.iter_rows(values_only=True)
+        try:
+            header_row = next(rows_iter)
+        except StopIteration:
+            return None, []
+        fieldnames = [str(h) if h is not None else "" for h in header_row]
+        raw_rows = [dict(zip(fieldnames, row, strict=False)) for row in rows_iter]
+    finally:
+        wb.close()
+    return fieldnames, raw_rows
+
+
+def _write_chunk_xlsx(
+    path: Path,
+    rows: list[dict[str, Any]],
+    cols: list[str],
+    label: str,
+    sheet: str | None = None,
+    show_progress: bool = True,
+) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    if sheet is not None:
+        ws.title = sheet
+    if rows:
+        ws.append(cols)
+        for row in tqdm(rows, desc=label, ncols=tqdm_ncols(), disable=not show_progress):
+            ws.append([row.get(c) for c in cols])
+    wb.save(path)
+
+
+def _write_chunk_jsonl(
+    path: Path,
+    rows: list[dict[str, Any]],
+    cols: list[str],
+    label: str,
+    encoding: str = "utf-8",
+    show_progress: bool = True,
+) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", encoding=encoding) as f:
+        for row in tqdm(rows, desc=label, ncols=tqdm_ncols(), disable=not show_progress):
+            f.write(json.dumps({c: row[c] for c in cols if c in row}) + "\n")
+
+
 def _write_chunk(
     path: Path,
     rows: list[dict[str, Any]],
@@ -29,7 +120,15 @@ def _write_chunk(
     label: str,
     delimiter: str = ",",
     encoding: str = "utf-8",
+    sheet: str | None = None,
+    show_progress: bool = True,
 ) -> None:
+    if _is_excel_path(path):
+        _write_chunk_xlsx(path, rows, cols, label, sheet, show_progress)
+        return
+    if _is_jsonl_path(path):
+        _write_chunk_jsonl(path, rows, cols, label, encoding, show_progress)
+        return
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", newline="", encoding=encoding) as f:
         if rows:
@@ -37,17 +136,20 @@ def _write_chunk(
             writer.writeheader()
             writer.writerows(
                 {c: row[c] for c in cols if c in row}
-                for row in tqdm(rows, desc=label, ncols=tqdm_ncols())
+                for row in tqdm(rows, desc=label, ncols=tqdm_ncols(), disable=not show_progress)
             )
 
 
 class ThaCSV:
-    def __init__(self, delimiter: str = ",", encoding: str = "utf-8") -> None:
+    def __init__(
+        self, delimiter: str = ",", encoding: str = "utf-8", show_progress: bool = True
+    ) -> None:
         self.rows: list[dict[str, Any]] = []
         self._read: bool = False
         self._input_path: Path | None = None
         self._delimiter = delimiter
         self._encoding = encoding
+        self._show_progress = show_progress
         self.status_cb = print
 
     def read(
@@ -57,24 +159,38 @@ class ThaCSV:
         required_headers: list[str],
         validator: Callable[[dict[str, Any]], None] | None = None,
         enrich: bool = True,
+        sheet: str | int | None = None,
     ) -> list[dict[str, Any]]:
         self._input_path = Path(input_path)
 
-        with open(self._input_path, newline="", encoding=self._encoding) as f:
-            reader = csv.DictReader(f, delimiter=self._delimiter)
-            if reader.fieldnames is None:
-                raise CsvError(f"{self._input_path} appears to be empty")
-            missing = [h for h in required_headers if h not in reader.fieldnames]
-            if missing:
-                raise CsvError(f"Missing required headers: {missing}")
-            raw_rows = list(reader)
+        if sheet is not None and not _is_excel_path(self._input_path):
+            raise ValueError("sheet= is only valid when reading a .xlsx file")
+
+        if _is_excel_path(self._input_path):
+            fieldnames, raw_rows = _read_excel_rows(self._input_path, sheet)
+        elif _is_jsonl_path(self._input_path):
+            fieldnames, raw_rows = _read_jsonl_rows(self._input_path, self._encoding)
+        else:
+            with open(self._input_path, newline="", encoding=self._encoding) as f:
+                reader = csv.DictReader(f, delimiter=self._delimiter)
+                fieldnames = list(reader.fieldnames) if reader.fieldnames is not None else None
+                raw_rows = list(reader)
+
+        if fieldnames is None:
+            raise CsvError(f"{self._input_path} appears to be empty")
+        missing = [h for h in required_headers if h not in fieldnames]
+        if missing:
+            raise CsvError(f"Missing required headers: {missing}")
 
         self.rows = []
         self._read = True
 
         reading = f"Reading {self._input_path.stem} CSV"
         label = f"{desc}: {reading}" if desc is not None else reading
-        for i, row in enumerate(tqdm(raw_rows, desc=label, ncols=tqdm_ncols()), start=2):
+        for i, row in enumerate(
+            tqdm(raw_rows, desc=label, ncols=tqdm_ncols(), disable=not self._show_progress),
+            start=2,
+        ):
             if enrich:
                 enriched = {**row, "row number": i, "row status": "", "message": ""}
             else:
@@ -103,6 +219,7 @@ class ThaCSV:
         keep: list[str] | None = None,
         drop: list[str] | None = None,
         chunk_size: int | None = None,
+        sheet: str | None = None,
     ) -> Path | list[Path]:
         if rows is None and not self._read:
             raise RuntimeError("No data to write — call read() first or pass rows=")
@@ -155,6 +272,9 @@ class ThaCSV:
 
         output_file = Path(output_path)
 
+        if sheet is not None and not _is_excel_path(output_file):
+            raise ValueError("sheet= is only valid when writing a .xlsx file")
+
         # --- chunked write ---
         if chunk_size is not None:
             chunks = [rows[i : i + chunk_size] for i in range(0, max(len(rows), 1), chunk_size)]
@@ -164,13 +284,31 @@ class ThaCSV:
                 chunk_path = output_file.parent / chunk_name
                 writing = f"Writing {output_file.stem} CSV ({idx}/{len(chunks)})"
                 label = f"{desc} ({idx}/{len(chunks)}): {writing}" if desc else writing
-                _write_chunk(chunk_path, chunk, cols, label, self._delimiter, self._encoding)
+                _write_chunk(
+                    chunk_path,
+                    chunk,
+                    cols,
+                    label,
+                    self._delimiter,
+                    self._encoding,
+                    sheet,
+                    self._show_progress,
+                )
                 paths.append(chunk_path)
             self.status_cb(f"✅ Done! CSV was written to: {paths}")
             return paths
 
         writing = f"Writing {output_file.stem} CSV"
         write_label = f"{desc}: {writing}" if desc is not None else writing
-        _write_chunk(output_file, rows, cols, write_label, self._delimiter, self._encoding)
+        _write_chunk(
+            output_file,
+            rows,
+            cols,
+            write_label,
+            self._delimiter,
+            self._encoding,
+            sheet,
+            self._show_progress,
+        )
         self.status_cb(f"✅ Done! CSV was written to: {output_file}")
         return output_file

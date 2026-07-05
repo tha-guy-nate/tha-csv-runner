@@ -4,10 +4,10 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tha-csv-runner"
-version = "0.3.5"
+version = "0.4.0"
 description = "A Tabular Helper API library that reads and writes CSVs with progress tracking, header validation, and structured per-row errors."
 readme = "README.md"
-keywords = ["csv", "cli", "data-processing", "tabular", "helper"]
+keywords = ["csv", "cli", "data-processing", "tabular", "helper", "excel", "xlsx", "jsonl", "json"]
 license = { text = "MIT" }
 authors = [{ name = "Nate Wright" }]
 requires-python = ">=3.10"
@@ -26,6 +26,7 @@ classifiers = [
 ]
 dependencies = [
     "tqdm>=4.68.2",
+    "openpyxl>=3.1.5",
 ]
 
 [project.optional-dependencies]
