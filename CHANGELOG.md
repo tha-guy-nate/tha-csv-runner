@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-07-05
+### Added
+- `.xlsx` read/write support, auto-detected by file extension on `read()`/`write()`, powered by `openpyxl` (core dependency, no extra install needed). Legacy `.xls` is not supported since `openpyxl` itself doesn't read that format.
+- `sheet=` parameter on `read()` (name or 0-based index) to target a specific worksheet in a `.xlsx` file; defaults to the active sheet. Raises `CsvError` for an unknown name or out-of-range index, and `ValueError` if passed while reading a `.csv` path.
+- `sheet=` parameter on `write()` to name the single output sheet in a `.xlsx` file (applies per-file when `chunk_size` is set). Raises `ValueError` if passed while writing a `.csv` path.
+### Fixed
+- Version drift: `__init__.py`'s `__version__` had been stuck at 0.3.4 while `pyproject.toml` had already moved to 0.3.5.
+
 ## [0.3.5] - 2026-07-04
 ### Fixed
 - Added missing `keywords` to `pyproject.toml` (PyPI search had none) and fixed the README's opening line to lead with the family-standard "A Tabular Helper API library that..." description instead of a divergent one-off wording.

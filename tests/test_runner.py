@@ -389,3 +389,197 @@ def test_encoding_roundtrip_cp1252(tmp_path: Path) -> None:
     rows = list(csv.DictReader(out.open(encoding="cp1252")))
     assert rows[0]["name"] == "José"
     assert rows[0]["city"] == "São Paulo"
+
+
+# --- excel ---
+
+
+def test_write_xlsx(simple_csv: Path, tmp_path: Path) -> None:
+    import openpyxl
+
+    out = tmp_path / "out.xlsx"
+    runner = ThaCSV()
+    runner.read(None, simple_csv, ["id", "name", "email"], enrich=False)
+    result = runner.write(None, out)
+
+    assert result == out
+    assert out.exists()
+
+    wb = openpyxl.load_workbook(out)
+    ws = wb.active
+    rows = list(ws.iter_rows(values_only=True))
+    assert rows[0] == ("id", "name", "email")
+    assert rows[1] == ("1", "Alice", "alice@example.com")
+
+
+def test_read_xlsx(tmp_path: Path) -> None:
+    import openpyxl
+
+    xlsx_path = tmp_path / "input.xlsx"
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.append(["name", "age"])
+    ws.append(["Alice", 30])
+    ws.append(["Bob", 25])
+    wb.save(xlsx_path)
+
+    runner = ThaCSV()
+    rows = runner.read(None, xlsx_path, ["name", "age"], enrich=False)
+
+    assert rows == [{"name": "Alice", "age": 30}, {"name": "Bob", "age": 25}]
+
+
+def test_read_xlsx_missing_headers_raises(tmp_path: Path) -> None:
+    import openpyxl
+
+    xlsx_path = tmp_path / "input.xlsx"
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.append(["name"])
+    ws.append(["Alice"])
+    wb.save(xlsx_path)
+
+    runner = ThaCSV()
+    with pytest.raises(CsvError, match="Missing required headers"):
+        runner.read(None, xlsx_path, ["name", "email"])
+
+
+def test_read_xlsx_empty_raises(tmp_path: Path) -> None:
+    import openpyxl
+
+    xlsx_path = tmp_path / "empty.xlsx"
+    wb = openpyxl.Workbook()
+    wb.save(xlsx_path)
+    # default new workbook has one truly empty sheet with no rows at all
+    ws = wb.active
+    assert ws.max_row == 1
+
+    runner = ThaCSV()
+    with pytest.raises(CsvError, match="appears to be empty"):
+        runner.read(None, xlsx_path, ["name"])
+
+
+def test_xlsx_roundtrip(simple_csv: Path, tmp_path: Path) -> None:
+    out = tmp_path / "out.xlsx"
+    runner = ThaCSV()
+    runner.read(None, simple_csv, ["id", "name", "email"], enrich=False)
+    runner.write(None, out)
+
+    reader = ThaCSV()
+    rows = reader.read(None, out, ["id", "name", "email"], enrich=False)
+    assert rows[0]["name"] == "Alice"
+
+
+def test_xlsx_chunked_write(simple_csv: Path, tmp_path: Path) -> None:
+    out = tmp_path / "out.xlsx"
+    runner = ThaCSV()
+    runner.read(None, simple_csv, ["id", "name", "email"], enrich=False)
+    paths = runner.write(None, out, chunk_size=1)
+
+    assert isinstance(paths, list)
+    assert len(paths) == 3
+    assert all(p.suffix == ".xlsx" for p in paths)
+    assert all(p.exists() for p in paths)
+
+
+def test_read_xlsx_sheet_by_name(tmp_path: Path) -> None:
+    import openpyxl
+
+    xlsx_path = tmp_path / "input.xlsx"
+    wb = openpyxl.Workbook()
+    wb.active.title = "First"
+    wb.active.append(["name"])
+    wb.active.append(["Alice"])
+    second = wb.create_sheet("Second")
+    second.append(["name"])
+    second.append(["Bob"])
+    wb.save(xlsx_path)
+
+    runner = ThaCSV()
+    rows = runner.read(None, xlsx_path, ["name"], enrich=False, sheet="Second")
+
+    assert rows == [{"name": "Bob"}]
+
+
+def test_read_xlsx_sheet_by_index(tmp_path: Path) -> None:
+    import openpyxl
+
+    xlsx_path = tmp_path / "input.xlsx"
+    wb = openpyxl.Workbook()
+    wb.active.append(["name"])
+    wb.active.append(["Alice"])
+    second = wb.create_sheet("Second")
+    second.append(["name"])
+    second.append(["Bob"])
+    wb.save(xlsx_path)
+
+    runner = ThaCSV()
+    rows = runner.read(None, xlsx_path, ["name"], enrich=False, sheet=1)
+
+    assert rows == [{"name": "Bob"}]
+
+
+def test_read_xlsx_sheet_name_not_found_raises(tmp_path: Path) -> None:
+    import openpyxl
+
+    xlsx_path = tmp_path / "input.xlsx"
+    wb = openpyxl.Workbook()
+    wb.active.append(["name"])
+    wb.save(xlsx_path)
+
+    runner = ThaCSV()
+    with pytest.raises(CsvError, match="Sheet 'Nope' not found"):
+        runner.read(None, xlsx_path, ["name"], sheet="Nope")
+
+
+def test_read_xlsx_sheet_index_out_of_range_raises(tmp_path: Path) -> None:
+    import openpyxl
+
+    xlsx_path = tmp_path / "input.xlsx"
+    wb = openpyxl.Workbook()
+    wb.active.append(["name"])
+    wb.save(xlsx_path)
+
+    runner = ThaCSV()
+    with pytest.raises(CsvError, match="Sheet index 5 out of range"):
+        runner.read(None, xlsx_path, ["name"], sheet=5)
+
+
+def test_read_csv_with_sheet_raises(simple_csv: Path) -> None:
+    runner = ThaCSV()
+    with pytest.raises(ValueError, match="sheet= is only valid"):
+        runner.read(None, simple_csv, ["name"], sheet="Sheet1")
+
+
+def test_write_xlsx_names_sheet(simple_csv: Path, tmp_path: Path) -> None:
+    import openpyxl
+
+    out = tmp_path / "out.xlsx"
+    runner = ThaCSV()
+    runner.read(None, simple_csv, ["id", "name", "email"], enrich=False)
+    runner.write(None, out, sheet="Contacts")
+
+    wb = openpyxl.load_workbook(out)
+    assert wb.sheetnames == ["Contacts"]
+
+
+def test_write_xlsx_names_sheet_chunked(simple_csv: Path, tmp_path: Path) -> None:
+    import openpyxl
+
+    out = tmp_path / "out.xlsx"
+    runner = ThaCSV()
+    runner.read(None, simple_csv, ["id", "name", "email"], enrich=False)
+    paths = runner.write(None, out, chunk_size=1, sheet="Contacts")
+
+    assert isinstance(paths, list)
+    for p in paths:
+        wb = openpyxl.load_workbook(p)
+        assert wb.sheetnames == ["Contacts"]
+
+
+def test_write_csv_with_sheet_raises(simple_csv: Path, tmp_path: Path) -> None:
+    out = tmp_path / "out.csv"
+    runner = ThaCSV()
+    runner.read(None, simple_csv, ["id", "name", "email"], enrich=False)
+    with pytest.raises(ValueError, match="sheet= is only valid"):
+        runner.write(None, out, sheet="Contacts")
