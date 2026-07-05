@@ -7,7 +7,7 @@
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 [![wheel size](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fpypi.org%2Fpypi%2Ftha-csv-runner%2Fjson&label=wheel%20size&query=%24.urls%5B0%5D.size&suffix=%20B)](https://pypi.org/project/tha-csv-runner/#files)
 
-A small Python library that runs a function against every row of a CSV — with a progress bar, required header validation, and structured error capture per row.
+A Tabular Helper API library that reads and writes CSVs with progress tracking, header validation, and structured per-row errors. Runs a function against every row — with a progress bar, required header validation, and structured error capture per row.
 
 ## Install
 
