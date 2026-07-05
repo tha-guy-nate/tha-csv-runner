@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `sheet=` parameter on `read()` (name or 0-based index) to target a specific worksheet in a `.xlsx` file; defaults to the active sheet. Raises `CsvError` for an unknown name or out-of-range index, and `ValueError` if passed while reading a `.csv` path.
 - `sheet=` parameter on `write()` to name the single output sheet in a `.xlsx` file (applies per-file when `chunk_size` is set). Raises `ValueError` if passed while writing a `.csv` path.
 - `.jsonl` read/write support, auto-detected by file extension on `read()`/`write()`. No new dependency (stdlib `json`). Blank lines are skipped on read; `required_headers` is checked against the first line's keys only. `sheet=` raises `ValueError` if passed for a `.jsonl` path.
-- `show_progress` parameter on `ThaCSV(show_progress=True)` to silence the `tqdm` progress bar on `read()`/`write()`. `tqdm` remains a hard dependency either way — this only toggles display, useful for CloudWatch/Lambda logs where a redrawing bar is just noise.
+- `show_progress` parameter on `ThaCSV(show_progress=True)` to silence the `tqdm` progress bar on `read()`/`write()`. `tqdm` remains a hard dependency either way — this only toggles display, useful when output is captured to a log file rather than a live terminal.
 ### Fixed
 - Version drift: `__init__.py`'s `__version__` had been stuck at 0.3.4 while `pyproject.toml` had already moved to 0.3.5.
 

@@ -87,7 +87,7 @@ runner.write("Step 2 of 2", "output.jsonl")
 
 ## Suppressing the progress bar
 
-Pass `show_progress=False` to silence the `tqdm` progress bar on both `read()` and `write()` — useful in environments like AWS Lambda/CloudWatch where a redrawing progress bar just spams the log instead of rendering. `tqdm` is still a hard dependency either way; this only toggles its display.
+Pass `show_progress=False` to silence the `tqdm` progress bar on both `read()` and `write()` — useful when output is captured to a log file rather than a live terminal, where a redrawing bar just adds noise. `tqdm` is still a hard dependency either way; this only toggles its display.
 
 ```python
 runner = ThaCSV(show_progress=False)
