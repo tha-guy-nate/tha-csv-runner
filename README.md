@@ -73,6 +73,26 @@ An unknown sheet name or out-of-range index raises `CsvError` listing the availa
 runner.write("Step 2 of 2", "output.xlsx", sheet="Q3 Data")
 ```
 
+## JSON Lines (.jsonl) support
+
+`read()` and `write()` also auto-detect `.jsonl` (newline-delimited JSON) by extension — no extra dependency, it's stdlib `json` under the hood. Each line is one JSON object; everything else (`required_headers`, `validator`, `column_order`, `sort_by`, `chunk_size`, etc.) works the same as CSV/Excel.
+
+```python
+runner = ThaCSV()
+runner.read("Step 1 of 2", "data.jsonl", ["name", "email"], process)
+runner.write("Step 2 of 2", "output.jsonl")
+```
+
+`required_headers` is checked against the first line's keys — later lines aren't required to match exactly, so JSONL's per-row schema flexibility isn't lost. Blank lines are skipped on read. `sheet=` doesn't apply here (it's `.xlsx`-only) and raises `ValueError` if passed.
+
+## Suppressing the progress bar
+
+Pass `show_progress=False` to silence the `tqdm` progress bar on both `read()` and `write()` — useful in environments like AWS Lambda/CloudWatch where a redrawing progress bar just spams the log instead of rendering. `tqdm` is still a hard dependency either way; this only toggles its display.
+
+```python
+runner = ThaCSV(show_progress=False)
+```
+
 ## API
 
 ### `ThaCSV`
@@ -81,6 +101,7 @@ runner.write("Step 2 of 2", "output.xlsx", sheet="Q3 Data")
 ThaCSV(
     delimiter=",",        # optional — pass "\t" for TSV, or any single-character separator
     encoding="utf-8",     # optional — pass "cp1252" or "latin-1" for Excel exports
+    show_progress=True,   # optional — set False to silence the tqdm progress bar
 )
 ```
 
@@ -141,6 +162,7 @@ This library is intentionally limited in scope — it handles row-by-row process
 - [**polars**](https://pola.rs) — faster alternative to pandas for large files with a cleaner API and lazy evaluation
 - [**csv**](https://docs.python.org/3/library/csv.html) (stdlib) — raw CSV reading/writing with no dependencies; sufficient when you don't need progress tracking or structured error capture
 - [**openpyxl**](https://openpyxl.readthedocs.io) — use directly when you need cell styling, formulas, multi-sheet output, or other Excel-specific features beyond plain data read/write and single-sheet-by-name/index read
+- [**json**](https://docs.python.org/3/library/json.html) (stdlib) — use directly if you need nested/non-tabular JSON structures; this library's `.jsonl` support is flat, one-row-per-line only
 
 Choose this library when you need per-row error capture with `row status` and `message` columns baked in — pandas and polars process data, they don't track individual row failures.
 

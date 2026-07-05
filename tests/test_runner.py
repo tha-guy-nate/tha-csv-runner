@@ -583,3 +583,175 @@ def test_write_csv_with_sheet_raises(simple_csv: Path, tmp_path: Path) -> None:
     runner.read(None, simple_csv, ["id", "name", "email"], enrich=False)
     with pytest.raises(ValueError, match="sheet= is only valid"):
         runner.write(None, out, sheet="Contacts")
+
+
+# --- jsonl ---
+
+
+def test_write_jsonl(simple_csv: Path, tmp_path: Path) -> None:
+    import json
+
+    out = tmp_path / "out.jsonl"
+    runner = ThaCSV()
+    runner.read(None, simple_csv, ["id", "name", "email"], enrich=False)
+    result = runner.write(None, out)
+
+    assert result == out
+    lines = out.read_text().strip().splitlines()
+    assert len(lines) == 3
+    assert json.loads(lines[0]) == {"id": "1", "name": "Alice", "email": "alice@example.com"}
+
+
+def test_read_jsonl(tmp_path: Path) -> None:
+    import json
+
+    jsonl_path = tmp_path / "input.jsonl"
+    jsonl_path.write_text(
+        json.dumps({"name": "Alice", "age": 30})
+        + "\n"
+        + json.dumps({"name": "Bob", "age": 25})
+        + "\n"
+    )
+
+    runner = ThaCSV()
+    rows = runner.read(None, jsonl_path, ["name", "age"], enrich=False)
+
+    assert rows == [{"name": "Alice", "age": 30}, {"name": "Bob", "age": 25}]
+
+
+def test_read_jsonl_skips_blank_lines(tmp_path: Path) -> None:
+    import json
+
+    jsonl_path = tmp_path / "input.jsonl"
+    jsonl_path.write_text(json.dumps({"name": "Alice"}) + "\n\n\n" + json.dumps({"name": "Bob"}))
+
+    runner = ThaCSV()
+    rows = runner.read(None, jsonl_path, ["name"], enrich=False)
+
+    assert rows == [{"name": "Alice"}, {"name": "Bob"}]
+
+
+def test_read_jsonl_missing_headers_raises(tmp_path: Path) -> None:
+    import json
+
+    jsonl_path = tmp_path / "input.jsonl"
+    jsonl_path.write_text(json.dumps({"name": "Alice"}) + "\n")
+
+    runner = ThaCSV()
+    with pytest.raises(CsvError, match="Missing required headers"):
+        runner.read(None, jsonl_path, ["name", "email"])
+
+
+def test_read_jsonl_empty_raises(tmp_path: Path) -> None:
+    jsonl_path = tmp_path / "empty.jsonl"
+    jsonl_path.write_text("")
+
+    runner = ThaCSV()
+    with pytest.raises(CsvError, match="appears to be empty"):
+        runner.read(None, jsonl_path, ["name"])
+
+
+def test_jsonl_roundtrip(simple_csv: Path, tmp_path: Path) -> None:
+    out = tmp_path / "out.jsonl"
+    runner = ThaCSV()
+    runner.read(None, simple_csv, ["id", "name", "email"], enrich=False)
+    runner.write(None, out)
+
+    reader = ThaCSV()
+    rows = reader.read(None, out, ["id", "name", "email"], enrich=False)
+    assert rows[0]["name"] == "Alice"
+
+
+def test_jsonl_chunked_write(simple_csv: Path, tmp_path: Path) -> None:
+    out = tmp_path / "out.jsonl"
+    runner = ThaCSV()
+    runner.read(None, simple_csv, ["id", "name", "email"], enrich=False)
+    paths = runner.write(None, out, chunk_size=1)
+
+    assert isinstance(paths, list)
+    assert len(paths) == 3
+    assert all(p.suffix == ".jsonl" for p in paths)
+    assert all(p.exists() for p in paths)
+
+
+def test_jsonl_respects_column_filtering(simple_csv: Path, tmp_path: Path) -> None:
+    import json
+
+    out = tmp_path / "out.jsonl"
+    runner = ThaCSV()
+    runner.read(None, simple_csv, ["id", "name", "email"], enrich=False)
+    runner.write(None, out, keep=["name"])
+
+    lines = out.read_text().strip().splitlines()
+    assert json.loads(lines[0]) == {"name": "Alice"}
+
+
+def test_read_jsonl_with_sheet_raises(tmp_path: Path) -> None:
+    import json
+
+    jsonl_path = tmp_path / "input.jsonl"
+    jsonl_path.write_text(json.dumps({"name": "Alice"}) + "\n")
+
+    runner = ThaCSV()
+    with pytest.raises(ValueError, match="sheet= is only valid"):
+        runner.read(None, jsonl_path, ["name"], sheet="Sheet1")
+
+
+def test_write_jsonl_with_sheet_raises(simple_csv: Path, tmp_path: Path) -> None:
+    out = tmp_path / "out.jsonl"
+    runner = ThaCSV()
+    runner.read(None, simple_csv, ["id", "name", "email"], enrich=False)
+    with pytest.raises(ValueError, match="sheet= is only valid"):
+        runner.write(None, out, sheet="Sheet1")
+
+
+# --- show_progress ---
+
+
+def test_show_progress_false_suppresses_read_output(
+    simple_csv: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    runner = ThaCSV(show_progress=False)
+    runner.read(None, simple_csv, ["name"])
+    assert capsys.readouterr().err == ""
+
+
+def test_show_progress_default_shows_read_output(
+    simple_csv: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    runner = ThaCSV()
+    runner.read(None, simple_csv, ["name"])
+    assert capsys.readouterr().err != ""
+
+
+def test_show_progress_false_suppresses_write_output(
+    simple_csv: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    out = tmp_path / "out.csv"
+    runner = ThaCSV(show_progress=False)
+    runner.read(None, simple_csv, ["name"], enrich=False)
+    capsys.readouterr()  # discard read()'s output
+    runner.write(None, out)
+    assert capsys.readouterr().err == ""
+
+
+def test_show_progress_false_suppresses_xlsx_write_output(
+    simple_csv: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    out = tmp_path / "out.xlsx"
+    runner = ThaCSV(show_progress=False)
+    runner.read(None, simple_csv, ["name"], enrich=False)
+    capsys.readouterr()
+    runner.write(None, out)
+    assert capsys.readouterr().err == ""
+
+
+def test_show_progress_false_suppresses_jsonl_write_output(
+    simple_csv: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    out = tmp_path / "out.jsonl"
+    runner = ThaCSV(show_progress=False)
+    runner.read(None, simple_csv, ["name"], enrich=False)
+    capsys.readouterr()
+    runner.write(None, out)
+    assert capsys.readouterr().err == ""
