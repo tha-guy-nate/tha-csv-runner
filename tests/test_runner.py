@@ -174,6 +174,26 @@ def test_write_drop(simple_csv: Path, tmp_path: Path) -> None:
     assert "name" in rows[0]
 
 
+def test_write_header_is_union_of_all_rows(tmp_path: Path) -> None:
+    out = tmp_path / "out.csv"
+    runner = ThaCSV()
+    runner.write(None, out, rows=[{"a": 1}, {"a": 2, "b": 3}])
+    rows = list(csv.DictReader(out.open()))
+    assert list(rows[0].keys()) == ["a", "b"]
+    assert rows[0]["b"] == ""
+    assert rows[1]["b"] == "3"
+
+
+def test_write_keep_uses_union_of_all_rows(tmp_path: Path) -> None:
+    out = tmp_path / "out.csv"
+    runner = ThaCSV()
+    runner.write(None, out, rows=[{"a": 1}, {"a": 2, "b": 3}], keep=["a", "b"])
+    rows = list(csv.DictReader(out.open()))
+    assert list(rows[0].keys()) == ["a", "b"]
+    assert rows[0]["b"] == ""
+    assert rows[1]["b"] == "3"
+
+
 def test_write_keep_and_drop_raises(simple_csv: Path, tmp_path: Path) -> None:
     out = tmp_path / "out.csv"
     runner = ThaCSV()

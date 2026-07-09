@@ -231,7 +231,15 @@ class ThaCSV:
         rows = list(rows) if rows is not None else list(self.rows)
 
         # --- column filtering ---
-        all_cols = list(rows[0].keys()) if rows else []
+        # Union of all rows' keys, not just rows[0] — a "narrow" first row (e.g. from an
+        # error/no-match path) must not silently drop columns that later rows carry.
+        all_cols: list[str] = []
+        seen: set[str] = set()
+        for row in rows:
+            for key in row:
+                if key not in seen:
+                    seen.add(key)
+                    all_cols.append(key)
 
         if keep:
             cols = [c for c in keep if c in all_cols]
