@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-07-09
+### Fixed
+- `write()` built the output column header from `rows[0]` only, so a narrow first row (e.g. an errored/no-match row from an upstream fan-out step) silently dropped columns that later rows carried, for every row in the file. `keep=` was affected even more sharply, discarding a keep-listed column outright if it was absent from `rows[0]`. The header is now built from the union of all rows' keys, preserving first-seen order; missing values still write blank per row, matching the existing per-row write behavior. Applies to `.csv`, `.xlsx`, and `.jsonl` output alike since they share the same column-resolution step.
+
 ## [0.4.0] - 2026-07-05
 ### Added
 - `.xlsx` read/write support, auto-detected by file extension on `read()`/`write()`, powered by `openpyxl` (core dependency, no extra install needed). Legacy `.xls` is not supported since `openpyxl` itself doesn't read that format.
