@@ -22,6 +22,11 @@ def tqdm_ncols(max_cols: int = 85) -> int:
 _BAR_FORMAT = "{l_bar}{bar}| {n_fmt}/{total_fmt}"
 
 
+def _compose_label(prefix: str | None, text: str) -> str:
+    """Build a progress label: ``"<prefix>: <text>"`` when a step prefix was given."""
+    return f"{prefix}: {text}" if prefix else text
+
+
 def _progress(iterable: Iterable[Any], label: str, show_progress: bool) -> Iterator[Any]:
     return tqdm(  # type: ignore[no-any-return]
         iterable, desc=label, ncols=tqdm_ncols(), bar_format=_BAR_FORMAT, disable=not show_progress
@@ -171,6 +176,8 @@ class ThaCSV:
         validator: Callable[[dict[str, Any]], None] | None = None,
         enrich: bool = True,
         sheet: str | int | None = None,
+        *,
+        label: str | None = None,
     ) -> list[dict[str, Any]]:
         self._input_path = Path(input_path)
 
@@ -196,9 +203,9 @@ class ThaCSV:
         self.rows = []
         self._read = True
 
-        reading = f"Reading {self._input_path.stem} CSV"
-        label = desc if desc is not None else reading
-        for i, row in enumerate(_progress(raw_rows, label, self._show_progress), start=2):
+        reading = label if label is not None else f"Reading {self._input_path.stem} CSV"
+        read_label = _compose_label(desc, reading)
+        for i, row in enumerate(_progress(raw_rows, read_label, self._show_progress), start=2):
             if enrich:
                 enriched = {**row, "row number": i, "row status": "", "message": ""}
             else:
@@ -228,6 +235,8 @@ class ThaCSV:
         drop: list[str] | None = None,
         chunk_size: int | None = None,
         sheet: str | None = None,
+        *,
+        label: str | None = None,
     ) -> Path | list[Path]:
         if rows is None and not self._read:
             raise RuntimeError("No data to write — call read() first or pass rows=")
@@ -301,13 +310,13 @@ class ThaCSV:
             for idx, chunk in enumerate(chunks, start=1):
                 chunk_name = f"{output_file.stem}_{idx:03d}{output_file.suffix}"
                 chunk_path = output_file.parent / chunk_name
-                writing = f"Writing {output_file.stem} CSV ({idx}/{len(chunks)})"
-                label = f"{desc} ({idx}/{len(chunks)})" if desc is not None else writing
+                writing = label if label is not None else f"Writing {output_file.stem} CSV"
+                chunk_label = _compose_label(desc, f"{writing} ({idx}/{len(chunks)})")
                 _write_chunk(
                     chunk_path,
                     chunk,
                     cols,
-                    label,
+                    chunk_label,
                     self._delimiter,
                     self._encoding,
                     sheet,
@@ -317,8 +326,8 @@ class ThaCSV:
             self.status_cb(f"{spacer}✅ Done! CSV was written to: {paths}")
             return paths
 
-        writing = f"Writing {output_file.stem} CSV"
-        write_label = desc if desc is not None else writing
+        writing = label if label is not None else f"Writing {output_file.stem} CSV"
+        write_label = _compose_label(desc, writing)
         _write_chunk(
             output_file,
             rows,

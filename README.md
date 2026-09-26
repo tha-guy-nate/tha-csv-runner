@@ -34,7 +34,7 @@ runner.write("Step 2 of 2", "output.csv")
 ## How it works
 
 1. Opens the CSV and validates that all `required_headers` are present — raises immediately if any are missing
-2. Iterates every row with a `tqdm` progress bar labelled with `desc` (used as the whole label)
+2. Iterates every row with a `tqdm` progress bar labelled with `desc` (a step prefix, e.g. `"[1/7]"`) followed by the default text, or your own via `label=`
 3. Calls your `validator(row)` function — if it raises, that row is marked as an error and processing continues
 4. Appends three columns to every row: `row number`, `row status`, and `message`
    - `row number` starts at 2 (row 1 is the header)
@@ -109,12 +109,13 @@ ThaCSV(
 
 ```python
 runner.read(
-    "[1/2]: Reading data",   # progress bar label, used as-is — pass None for "Reading {stem} CSV"
+    "[1/2]",                 # step prefix — pass None for none; label is "[1/2]: Reading {stem} CSV"
     "data.csv",              # path to input CSV
     ["a", "b"],              # columns that must exist — raises CsvError if missing
     validator=my_func,       # optional: callable(row: dict) -> None
     enrich=True,             # optional: set False to skip row number/status/message columns
     sheet=None,              # optional: .xlsx only — sheet name (str) or 0-based index (int)
+    label=None,              # optional: replaces the default text, e.g. "Loading people" -> "[1/2]: Loading people"
 )
 ```
 
@@ -128,8 +129,8 @@ When `enrich=False`, validator exceptions are re-raised instead of captured.
 
 ```python
 runner.write(
-    "[2/2]: Writing data",             # progress bar label, used as-is — pass None for "Writing {stem} CSV"
-                                       # (with chunk_size, " (i/n)" is appended to it)
+    "[2/2]",                           # step prefix — pass None for none; label is "[2/2]: Writing {stem} CSV"
+                                       # (with chunk_size, " (i/n)" is appended to the text)
     output_path="output.csv",          # optional — auto-named input_processed_TIMESTAMP.csv if omitted
     rows=my_rows,                      # optional — use these rows instead of runner.rows
     sort_by="name",                    # optional — column name, or list of column names
@@ -139,6 +140,7 @@ runner.write(
     drop=["row number"],               # optional — remove these columns (mutually exclusive with keep)
     chunk_size=1000,                   # optional — split output into files of this many rows
     sheet=None,                        # optional: .xlsx only — names the output sheet
+    label=None,                        # optional — replaces the default text, e.g. "Saving results"
 )
 ```
 
