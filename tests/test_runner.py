@@ -246,10 +246,22 @@ def test_sort_numeric_aware(tmp_path: Path) -> None:
     assert vals == ["5", "10", "abc"]
 
 
-def test_desc_stored_as_tqdm_label(simple_csv: Path) -> None:
+def test_desc_used_verbatim_as_read_label(
+    simple_csv: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     runner = ThaCSV()
-    runner.read("Step 2 of 10", simple_csv, ["name"])
+    runner.read("[1/7]: Loading things", simple_csv, ["name"])
+    err = capsys.readouterr().err
     assert runner.rows  # read completed
+    assert "[1/7]: Loading things" in err
+    assert "Reading" not in err
+
+
+def test_desc_none_uses_default_read_label(
+    simple_csv: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    ThaCSV().read(None, simple_csv, ["name"])
+    assert f"Reading {simple_csv.stem} CSV" in capsys.readouterr().err
 
 
 def test_enrich_false_omits_enriched_columns(simple_csv: Path) -> None:
@@ -775,3 +787,101 @@ def test_show_progress_false_suppresses_jsonl_write_output(
     capsys.readouterr()
     runner.write(None, out)
     assert capsys.readouterr().err == ""
+
+
+# --- progress label / bar format / Done spacing ---
+
+
+def _messages(runner: ThaCSV) -> list[str]:
+    messages: list[str] = []
+    runner.status_cb = messages.append
+    return messages
+
+
+def test_write_desc_used_verbatim_as_label(
+    simple_csv: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    runner = ThaCSV()
+    runner.read(None, simple_csv, ["name"], enrich=False)
+    capsys.readouterr()
+    runner.write("[6/7]: Saving results", tmp_path / "out.csv")
+    err = capsys.readouterr().err
+    assert "[6/7]: Saving results" in err
+    assert "Writing" not in err
+
+
+def test_write_desc_none_uses_default_label(
+    simple_csv: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    runner = ThaCSV()
+    runner.read(None, simple_csv, ["name"], enrich=False)
+    capsys.readouterr()
+    runner.write(None, tmp_path / "out.csv")
+    assert "Writing out CSV" in capsys.readouterr().err
+
+
+def test_chunked_write_label_appends_chunk_index_to_desc(
+    simple_csv: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    runner = ThaCSV()
+    runner.read(None, simple_csv, ["name"], enrich=False)
+    capsys.readouterr()
+    runner.write("Saving", tmp_path / "out.csv", chunk_size=1)
+    err = capsys.readouterr().err
+    assert "Saving (1/" in err
+    assert "Writing" not in err
+
+
+def test_chunked_write_desc_none_uses_default_label(
+    simple_csv: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    runner = ThaCSV()
+    runner.read(None, simple_csv, ["name"], enrich=False)
+    capsys.readouterr()
+    runner.write(None, tmp_path / "out.csv", chunk_size=1)
+    assert "Writing out CSV (1/" in capsys.readouterr().err
+
+
+def test_bar_omits_elapsed_and_rate(
+    simple_csv: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    runner = ThaCSV()
+    runner.read("Reading", simple_csv, ["name"])
+    runner.write("Writing", tmp_path / "out.csv")
+    err = capsys.readouterr().err
+    assert "it/s" not in err
+    assert "[00:" not in err
+    assert "100%" in err
+
+
+def test_done_line_has_leading_blank_line_when_progress_shown(
+    simple_csv: Path, tmp_path: Path
+) -> None:
+    runner = ThaCSV()
+    messages = _messages(runner)
+    runner.read(None, simple_csv, ["name"], enrich=False)
+    runner.write(None, tmp_path / "out.csv")
+    assert messages[-1].startswith("\n✅ Done! CSV was written to: ")
+
+
+def test_done_line_has_leading_blank_line_when_chunked(simple_csv: Path, tmp_path: Path) -> None:
+    runner = ThaCSV()
+    messages = _messages(runner)
+    runner.read(None, simple_csv, ["name"], enrich=False)
+    runner.write(None, tmp_path / "out.csv", chunk_size=1)
+    assert messages[-1].startswith("\n✅ Done! CSV was written to: ")
+
+
+def test_done_line_has_no_blank_line_when_progress_hidden(simple_csv: Path, tmp_path: Path) -> None:
+    runner = ThaCSV(show_progress=False)
+    messages = _messages(runner)
+    runner.read(None, simple_csv, ["name"], enrich=False)
+    runner.write(None, tmp_path / "out.csv")
+    assert messages[-1].startswith("✅ Done! CSV was written to: ")
+
+
+def test_done_line_has_no_blank_line_when_no_rows(tmp_path: Path) -> None:
+    runner = ThaCSV()
+    messages = _messages(runner)
+    runner.write(None, tmp_path / "out.csv", rows=[])
+    assert messages[-1].startswith("✅ Done! CSV was written to: ")

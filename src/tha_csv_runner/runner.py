@@ -2,7 +2,7 @@ import csv
 import functools
 import json
 import shutil
-from collections.abc import Callable
+from collections.abc import Callable, Iterable, Iterator
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -15,6 +15,17 @@ from .errors import CsvError
 
 def tqdm_ncols(max_cols: int = 85) -> int:
     return min(shutil.get_terminal_size(fallback=(max_cols, 24)).columns, max_cols)
+
+
+# No elapsed/rate fields: they add ~25 columns of noise and, next to a long label, pushed the
+# line past ncols so the terminal cut it off mid-field.
+_BAR_FORMAT = "{l_bar}{bar}| {n_fmt}/{total_fmt}"
+
+
+def _progress(iterable: Iterable[Any], label: str, show_progress: bool) -> Iterator[Any]:
+    return tqdm(  # type: ignore[no-any-return]
+        iterable, desc=label, ncols=tqdm_ncols(), bar_format=_BAR_FORMAT, disable=not show_progress
+    )
 
 
 def _sort_key(val: object) -> tuple[int, float | str]:
@@ -94,7 +105,7 @@ def _write_chunk_xlsx(
         ws.title = sheet
     if rows:
         ws.append(cols)
-        for row in tqdm(rows, desc=label, ncols=tqdm_ncols(), disable=not show_progress):
+        for row in _progress(rows, label, show_progress):
             ws.append([row.get(c) for c in cols])
     wb.save(path)
 
@@ -109,7 +120,7 @@ def _write_chunk_jsonl(
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding=encoding) as f:
-        for row in tqdm(rows, desc=label, ncols=tqdm_ncols(), disable=not show_progress):
+        for row in _progress(rows, label, show_progress):
             f.write(json.dumps({c: row[c] for c in cols if c in row}) + "\n")
 
 
@@ -136,7 +147,7 @@ def _write_chunk(
             writer.writeheader()
             writer.writerows(
                 {c: row[c] for c in cols if c in row}
-                for row in tqdm(rows, desc=label, ncols=tqdm_ncols(), disable=not show_progress)
+                for row in _progress(rows, label, show_progress)
             )
 
 
@@ -186,11 +197,8 @@ class ThaCSV:
         self._read = True
 
         reading = f"Reading {self._input_path.stem} CSV"
-        label = f"{desc}: {reading}" if desc is not None else reading
-        for i, row in enumerate(
-            tqdm(raw_rows, desc=label, ncols=tqdm_ncols(), disable=not self._show_progress),
-            start=2,
-        ):
+        label = desc if desc is not None else reading
+        for i, row in enumerate(_progress(raw_rows, label, self._show_progress), start=2):
             if enrich:
                 enriched = {**row, "row number": i, "row status": "", "message": ""}
             else:
@@ -283,6 +291,9 @@ class ThaCSV:
         if sheet is not None and not _is_excel_path(output_file):
             raise ValueError("sheet= is only valid when writing a .xlsx file")
 
+        # A progress bar only prints when there are rows to iterate; give the Done line some air.
+        spacer = "\n" if self._show_progress and rows else ""
+
         # --- chunked write ---
         if chunk_size is not None:
             chunks = [rows[i : i + chunk_size] for i in range(0, max(len(rows), 1), chunk_size)]
@@ -291,7 +302,7 @@ class ThaCSV:
                 chunk_name = f"{output_file.stem}_{idx:03d}{output_file.suffix}"
                 chunk_path = output_file.parent / chunk_name
                 writing = f"Writing {output_file.stem} CSV ({idx}/{len(chunks)})"
-                label = f"{desc} ({idx}/{len(chunks)}): {writing}" if desc else writing
+                label = f"{desc} ({idx}/{len(chunks)})" if desc is not None else writing
                 _write_chunk(
                     chunk_path,
                     chunk,
@@ -303,11 +314,11 @@ class ThaCSV:
                     self._show_progress,
                 )
                 paths.append(chunk_path)
-            self.status_cb(f"✅ Done! CSV was written to: {paths}")
+            self.status_cb(f"{spacer}✅ Done! CSV was written to: {paths}")
             return paths
 
         writing = f"Writing {output_file.stem} CSV"
-        write_label = f"{desc}: {writing}" if desc is not None else writing
+        write_label = desc if desc is not None else writing
         _write_chunk(
             output_file,
             rows,
@@ -318,5 +329,5 @@ class ThaCSV:
             sheet,
             self._show_progress,
         )
-        self.status_cb(f"✅ Done! CSV was written to: {output_file}")
+        self.status_cb(f"{spacer}✅ Done! CSV was written to: {output_file}")
         return output_file
