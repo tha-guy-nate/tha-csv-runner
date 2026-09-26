@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-09-26
+### Added
+- `read()` and `write()` take a keyword-only `label` that replaces the default progress text (`"Reading {stem} CSV"` / `"Writing {stem} CSV"`). `desc="[1/7]", label="Loading people"` renders `"[1/7]: Loading people"`. With `chunk_size`, `" (i/n)"` is appended to the text.
+
+### Changed
+- **Reverts part of 0.5.0:** `desc` is a step prefix again, asserted at the front (`desc="[1/7]"` → `"[1/7]: Reading {stem} CSV"`), instead of the whole label. Callers that adopted 0.5.0 by passing full text (`"[1/7]: Reading data"`) will now get the default text appended; pass `"[1/7]"` and, if the wording should differ, `label="Reading data"`. The shorter bar and the blank line before the Done message from 0.5.0 are unchanged.
+- Chunked writes render `"<desc>: <text> (i/n)"` (0.5.0 rendered `"<desc> (i/n)"`, dropping the text).
+- `__version__` is now read from the installed package metadata (`importlib.metadata`) instead of a hardcoded string, so `pyproject.toml` is the only place the version is bumped.
+
 ## [0.5.0] - 2026-09-26
 ### Changed
 - **Breaking:** the `desc` argument to `read()` and `write()` is now the whole progress-bar label, used verbatim, instead of a prefix that had `": Reading {stem} CSV"` / `": Writing {stem} CSV"` appended. Callers that passed a step marker like `"[1/7]"` should now pass the full text (e.g. `"[1/7]: Reading data"`). `desc=None` still gives the default `"Reading {stem} CSV"` / `"Writing {stem} CSV"`. With `chunk_size`, `" (i/n)"` is appended to `desc` so chunks stay distinguishable (previously the chunk index only appeared when `desc` was truthy, and `desc=""` was treated like `None`).

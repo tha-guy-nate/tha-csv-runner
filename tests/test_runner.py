@@ -246,15 +246,31 @@ def test_sort_numeric_aware(tmp_path: Path) -> None:
     assert vals == ["5", "10", "abc"]
 
 
-def test_desc_used_verbatim_as_read_label(
+def test_desc_is_step_prefix_before_default_read_label(
     simple_csv: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     runner = ThaCSV()
-    runner.read("[1/7]: Loading things", simple_csv, ["name"])
-    err = capsys.readouterr().err
+    runner.read("[1/7]", simple_csv, ["name"])
     assert runner.rows  # read completed
+    assert f"[1/7]: Reading {simple_csv.stem} CSV" in capsys.readouterr().err
+
+
+def test_label_replaces_default_read_text(
+    simple_csv: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    ThaCSV().read("[1/7]", simple_csv, ["name"], label="Loading things")
+    err = capsys.readouterr().err
     assert "[1/7]: Loading things" in err
     assert "Reading" not in err
+
+
+def test_label_without_desc_is_the_whole_read_label(
+    simple_csv: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    ThaCSV().read(None, simple_csv, ["name"], label="Loading things")
+    err = capsys.readouterr().err
+    assert "Loading things" in err
+    assert ": Loading things" not in err
 
 
 def test_desc_none_uses_default_read_label(
@@ -798,13 +814,23 @@ def _messages(runner: ThaCSV) -> list[str]:
     return messages
 
 
-def test_write_desc_used_verbatim_as_label(
+def test_write_desc_is_step_prefix_before_default_label(
     simple_csv: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     runner = ThaCSV()
     runner.read(None, simple_csv, ["name"], enrich=False)
     capsys.readouterr()
-    runner.write("[6/7]: Saving results", tmp_path / "out.csv")
+    runner.write("[6/7]", tmp_path / "out.csv")
+    assert "[6/7]: Writing out CSV" in capsys.readouterr().err
+
+
+def test_write_label_replaces_default_text(
+    simple_csv: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    runner = ThaCSV()
+    runner.read(None, simple_csv, ["name"], enrich=False)
+    capsys.readouterr()
+    runner.write("[6/7]", tmp_path / "out.csv", label="Saving results")
     err = capsys.readouterr().err
     assert "[6/7]: Saving results" in err
     assert "Writing" not in err
@@ -820,15 +846,15 @@ def test_write_desc_none_uses_default_label(
     assert "Writing out CSV" in capsys.readouterr().err
 
 
-def test_chunked_write_label_appends_chunk_index_to_desc(
+def test_chunked_write_label_appends_chunk_index_to_text(
     simple_csv: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     runner = ThaCSV()
     runner.read(None, simple_csv, ["name"], enrich=False)
     capsys.readouterr()
-    runner.write("Saving", tmp_path / "out.csv", chunk_size=1)
+    runner.write("[6/7]", tmp_path / "out.csv", label="Saving", chunk_size=1)
     err = capsys.readouterr().err
-    assert "Saving (1/" in err
+    assert "[6/7]: Saving (1/" in err
     assert "Writing" not in err
 
 
