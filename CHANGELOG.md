@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-09-26
+### Changed
+- **Breaking:** the `desc` argument to `read()` and `write()` is now the whole progress-bar label, used verbatim, instead of a prefix that had `": Reading {stem} CSV"` / `": Writing {stem} CSV"` appended. Callers that passed a step marker like `"[1/7]"` should now pass the full text (e.g. `"[1/7]: Reading data"`). `desc=None` still gives the default `"Reading {stem} CSV"` / `"Writing {stem} CSV"`. With `chunk_size`, `" (i/n)"` is appended to `desc` so chunks stay distinguishable (previously the chunk index only appeared when `desc` was truthy, and `desc=""` was treated like `None`).
+- Progress bars no longer show elapsed time and rate (`[00:00<00:00, 27594.11it/s]`); they now render as `label: 100%|####| 3/3`. On a long label the extra fields pushed the line past the 85-column cap and the terminal cut it off mid-field. Applies to read, write, xlsx, jsonl, and chunked writes.
+- The `✅ Done! CSV was written to: ...` message sent to `status_cb` now starts with a blank line (`"\n"`) when a progress bar was shown, separating it from the bar. No blank line is added when `show_progress=False` or there were no rows to write (no bar is printed in that case).
+
 ## [0.4.2] - 2026-08-21
 ### Fixed
 - Re-locked transitive `pip` (pulled in via `deptry` -> `pip-api`) from `26.1.2` to `26.2.1`, resolving a known CVE (PYSEC-2026-3721) flagged by `pip-audit`.
