@@ -1129,13 +1129,13 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "deptry", marker = "extra == 'dev'", specifier = "==0.25.1" },
-    { name = "mypy", marker = "extra == 'dev'", specifier = "==2.4.0" },
+    { name = "deptry", marker = "extra == 'dev'", specifier = ">=0.25.1" },
+    { name = "mypy", marker = "extra == 'dev'", specifier = ">=2.1.0" },
     { name = "openpyxl", specifier = "==3.1.5" },
-    { name = "pip-audit", marker = "extra == 'dev'", specifier = "==2.10.1" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = "==9.1.1" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = "==7.1.0" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = "==0.16.10" },
+    { name = "pip-audit", marker = "extra == 'dev'", specifier = ">=2.10.1" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=9.1.0" },
+    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=7.1.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.17" },
     { name = "tqdm", specifier = "==4.70.1" },
 ]
 provides-extras = ["dev"]
