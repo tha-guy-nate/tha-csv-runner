@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-02
+### Changed
+- Dependencies are now pinned to exact versions (`==`) instead of `>=` floors, and updated to the latest releases: `tqdm==4.70.1`, `openpyxl==3.1.5`.
+
 ## [0.6.0] - 2026-09-26
 ### Added
 - `read()` and `write()` take a keyword-only `label` that replaces the default progress text (`"Reading {stem} CSV"` / `"Writing {stem} CSV"`). `desc="[1/7]", label="Loading people"` renders `"[1/7]: Loading people"`. With `chunk_size`, `" (i/n)"` is appended to the text.
